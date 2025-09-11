@@ -1,5 +1,5 @@
 """
-ASGI config for jobify project.
+ASGI config for lockedin project.
 
 It exposes the ASGI callable as a module-level variable named ``application``.
 
@@ -11,6 +11,6 @@ import os
 
 from django.core.asgi import get_asgi_application
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'jobify.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'lockedin.settings')
 
 application = get_asgi_application()

@@ -1,0 +1,255 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ profile.user.get_full_name }} - LockedIn{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <!-- Profile Header -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-3 text-center">
+                        {% if profile.profile_picture %}
+                            <img src="{{ profile.profile_picture.url }}" alt="Profile Picture" 
+                                 class="rounded-circle img-fluid" style="width: 150px; height: 150px; object-fit: cover;">
+                        {% else %}
+                            <div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center" 
+                                 style="width: 150px; height: 150px; margin: 0 auto;">
+                                <i class="fas fa-user fa-3x text-white"></i>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-9">
+                        <h1 class="h3 mb-2">{{ profile.user.get_full_name|default:profile.user.username }}</h1>
+                        <h2 class="h5 text-primary mb-3">{{ profile.headline }}</h2>
+                        
+                        {% if profile.location %}
+                            <p class="mb-2">
+                                <i class="fas fa-map-marker-alt text-muted"></i> {{ profile.location }}
+                            </p>
+                        {% endif %}
+                        
+                        {% if profile.phone and is_own_profile %}
+                            <p class="mb-2">
+                                <i class="fas fa-phone text-muted"></i> {{ profile.phone }}
+                            </p>
+                        {% endif %}
+                        
+                        <p class="mb-2">
+                            <i class="fas fa-envelope text-muted"></i> {{ profile.user.email }}
+                        </p>
+                        
+                        {% if is_own_profile %}
+                            <div class="mt-3">
+                                <a href="{% url 'edit_profile' %}" class="btn btn-primary btn-sm">
+                                    <i class="fas fa-edit"></i> Edit Profile
+                                </a>
+                                <button class="btn btn-outline-secondary btn-sm" onclick="toggleVisibility()">
+                                    <i class="fas fa-eye{{ profile.is_public|yesno:'-slash,' }}"></i> 
+                                    {{ profile.is_public|yesno:"Make Private,Make Public" }}
+                                </button>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                {% if profile.bio %}
+                    <hr>
+                    <div class="mt-3">
+                        <h5><i class="fas fa-user-circle"></i> About</h5>
+                        <p class="text-muted">{{ profile.bio|linebreaks }}</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Professional Links -->
+        {% if profile.website or profile.linkedin_url or profile.github_url or profile.portfolio_url or links %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5><i class="fas fa-link"></i> Professional Links</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% if profile.website %}
+                            <div class="col-md-6 mb-2">
+                                <a href="{{ profile.website }}" target="_blank" class="text-decoration-none">
+                                    <i class="fas fa-globe text-primary"></i> Personal Website
+                                </a>
+                            </div>
+                        {% endif %}
+                        
+                        {% if profile.linkedin_url %}
+                            <div class="col-md-6 mb-2">
+                                <a href="{{ profile.linkedin_url }}" target="_blank" class="text-decoration-none">
+                                    <i class="fab fa-linkedin text-primary"></i> LinkedIn
+                                </a>
+                            </div>
+                        {% endif %}
+                        
+                        {% if profile.github_url %}
+                            <div class="col-md-6 mb-2">
+                                <a href="{{ profile.github_url }}" target="_blank" class="text-decoration-none">
+                                    <i class="fab fa-github text-dark"></i> GitHub
+                                </a>
+                            </div>
+                        {% endif %}
+                        
+                        {% if profile.portfolio_url %}
+                            <div class="col-md-6 mb-2">
+                                <a href="{{ profile.portfolio_url }}" target="_blank" class="text-decoration-none">
+                                    <i class="fas fa-briefcase text-primary"></i> Portfolio
+                                </a>
+                            </div>
+                        {% endif %}
+                        
+                        {% for link in links %}
+                            <div class="col-md-6 mb-2">
+                                <a href="{{ link.url }}" target="_blank" class="text-decoration-none">
+                                    <i class="fas fa-external-link-alt text-primary"></i> {{ link.title }}
+                                </a>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+
+        <!-- Skills Section -->
+        {% if skills %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5><i class="fas fa-cogs"></i> Skills</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for skill in skills %}
+                            <div class="col-md-6 mb-3">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="fw-bold">{{ skill.name }}</span>
+                                    <span class="badge bg-primary">{{ skill.get_level_display }}</span>
+                                </div>
+                                <div class="progress mt-1" style="height: 6px;">
+                                    {% if skill.level == 'beginner' %}
+                                        <div class="progress-bar bg-info" style="width: 25%"></div>
+                                    {% elif skill.level == 'intermediate' %}
+                                        <div class="progress-bar bg-warning" style="width: 50%"></div>
+                                    {% elif skill.level == 'advanced' %}
+                                        <div class="progress-bar bg-primary" style="width: 75%"></div>
+                                    {% elif skill.level == 'expert' %}
+                                        <div class="progress-bar bg-success" style="width: 100%"></div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+
+        <!-- Work Experience Section -->
+        {% if experience %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5><i class="fas fa-briefcase"></i> Work Experience</h5>
+                </div>
+                <div class="card-body">
+                    {% for exp in experience %}
+                        <div class="mb-4 {% if not forloop.last %}border-bottom pb-3{% endif %}">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6 class="mb-1">{{ exp.position }}</h6>
+                                    <p class="text-primary mb-1">{{ exp.company }}</p>
+                                    {% if exp.location %}
+                                        <p class="text-muted small mb-1">
+                                            <i class="fas fa-map-marker-alt"></i> {{ exp.location }}
+                                        </p>
+                                    {% endif %}
+                                </div>
+                                <div class="text-end">
+                                    <small class="text-muted">
+                                        {{ exp.start_date|date:"M Y" }} - 
+                                        {% if exp.end_date %}{{ exp.end_date|date:"M Y" }}{% else %}Present{% endif %}
+                                    </small>
+                                    {% if exp.is_current %}
+                                        <span class="badge bg-success ms-2">Current</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% if exp.description %}
+                                <div class="mt-2">
+                                    <p class="text-muted">{{ exp.description|linebreaks }}</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+
+        <!-- Education Section -->
+        {% if education %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5><i class="fas fa-graduation-cap"></i> Education</h5>
+                </div>
+                <div class="card-body">
+                    {% for edu in education %}
+                        <div class="mb-4 {% if not forloop.last %}border-bottom pb-3{% endif %}">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6 class="mb-1">{{ edu.degree }}</h6>
+                                    <p class="text-primary mb-1">{{ edu.institution }}</p>
+                                    {% if edu.field_of_study %}
+                                        <p class="text-muted small mb-1">{{ edu.field_of_study }}</p>
+                                    {% endif %}
+                                    {% if edu.gpa %}
+                                        <p class="text-muted small mb-1">GPA: {{ edu.gpa }}</p>
+                                    {% endif %}
+                                </div>
+                                <div class="text-end">
+                                    <small class="text-muted">
+                                        {{ edu.start_date|date:"M Y" }} - 
+                                        {% if edu.end_date %}{{ edu.end_date|date:"M Y" }}{% else %}Present{% endif %}
+                                    </small>
+                                    {% if edu.is_current %}
+                                        <span class="badge bg-success ms-2">Current</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% if edu.description %}
+                                <div class="mt-2">
+                                    <p class="text-muted">{{ edu.description|linebreaks }}</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+{% if is_own_profile %}
+<script>
+function toggleVisibility() {
+    fetch('{% url "toggle_profile_visibility" %}', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+            'Content-Type': 'application/json',
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    });
+}
+</script>
+{% endif %}
+{% endblock %}

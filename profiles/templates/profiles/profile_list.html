@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+
+{% block title %}Browse Profiles - Job Platform{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-users"></i> Job Seeker Profiles</h2>
+    {% if not user.is_authenticated %}
+        <a href="{% url 'register_job_seeker' %}" class="btn btn-primary">
+            <i class="fas fa-user-plus"></i> Join as Job Seeker
+        </a>
+    {% endif %}
+</div>
+
+<div class="row">
+    {% for profile in profiles %}
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="text-center mb-3">
+                        {% if profile.profile_picture %}
+                            <img src="{{ profile.profile_picture.url }}" alt="Profile Picture" 
+                                 class="rounded-circle" style="width: 80px; height: 80px; object-fit: cover;">
+                        {% else %}
+                            <div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center mx-auto"
+                                 style="width: 80px; height: 80px;">
+                                <i class="fas fa-user fa-2x text-white"></i>
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <h5 class="card-title text-center">{{ profile.user.get_full_name|default:profile.user.username }}</h5>
+                    <p class="card-text text-center text-primary">{{ profile.headline }}</p>
+                    
+                    {% if profile.location %}
+                        <p class="card-text text-center text-muted">
+                            <i class="fas fa-map-marker-alt"></i> {{ profile.location }}
+                        </p>
+                    {% endif %}
+
+                    {% if profile.skills.all %}
+                        <div class="mb-3">
+                            <small class="text-muted">Top Skills:</small>
+                            <div>
+                                {% for skill in profile.skills.all|slice:":3" %}
+                                    <span class="badge bg-light text-dark me-1">{{ skill.name }}</span>
+                                {% endfor %}
+                                {% if profile.skills.count > 3 %}
+                                    <span class="badge bg-secondary">+{{ profile.skills.count|add:"-3" }} more</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="card-footer text-center">
+                    <a href="{% url 'view_public_profile' profile.user.id %}" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-eye"></i> View Profile
+                    </a>
+                </div>
+            </div>
+        </div>
+    {% empty %}
+        <div class="col-12">
+            <div class="text-center py-5">
+                <i class="fas fa-users fa-4x text-muted mb-3"></i>
+                <h4 class="text-muted">No public profiles yet</h4>
+                <p class="text-muted">Be the first to create a profile!</p>
+                {% if not user.is_authenticated %}
+                    <a href="{% url 'register_job_seeker' %}" class="btn btn-primary">
+                        <i class="fas fa-user-plus"></i> Create Profile
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    {% endfor %}
+</div>
+{% endblock %}

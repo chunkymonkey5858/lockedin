@@ -1,0 +1,196 @@
+{% extends 'base.html' %}
+
+{% block title %}Applications for {{ job.title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2>Applications for "{{ job.title }}"</h2>
+            <p class="text-muted mb-0">{{ job.company }} • {{ job.location }}</p>
+        </div>
+        <div>
+            <a href="{% url 'jobs:my_jobs' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i>Back to My Jobs
+            </a>
+        </div>
+    </div>
+    
+    <!-- Job Summary -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-8">
+                    <h6>Job Summary</h6>
+                    <p class="mb-2">{{ job.description|truncatewords:30 }}</p>
+                    <div class="d-flex gap-3">
+                        <small class="text-muted">
+                            <i class="fas fa-briefcase me-1"></i>{{ job.get_employment_type_display }}
+                        </small>
+                        <small class="text-muted">
+                            <i class="fas fa-chart-line me-1"></i>{{ job.get_experience_level_display }}
+                        </small>
+                        <small class="text-muted">
+                            <i class="fas fa-calendar me-1"></i>Posted {{ job.posted_at|timesince }} ago
+                        </small>
+                    </div>
+                </div>
+                <div class="col-md-4 text-end">
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <h4 class="text-primary">{{ job.view_count }}</h4>
+                            <small class="text-muted">Views</small>
+                        </div>
+                        <div class="col-6">
+                            <h4 class="text-success">{{ applications.count }}</h4>
+                            <small class="text-muted">Applications</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Applications -->
+    {% if applications %}
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Applications ({{ applications.count }})</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Applicant</th>
+                                <th>Applied</th>
+                                <th>Status</th>
+                                <th>Resume</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for application in applications %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            {% if application.applicant.job_seeker_profile.profile_picture %}
+                                                <img src="{{ application.applicant.job_seeker_profile.profile_picture.url }}" class="rounded-circle me-3" width="40" height="40" alt="Profile">
+                                            {% else %}
+                                                <div class="bg-secondary rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                                    <i class="fas fa-user text-white small"></i>
+                                                </div>
+                                            {% endif %}
+                                            <div>
+                                                <h6 class="mb-0">{{ application.applicant.get_full_name|default:application.applicant.username }}</h6>
+                                                <small class="text-muted">{{ application.applicant.email }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <small>{{ application.applied_at|date:"M d, Y" }}</small><br>
+                                        <small class="text-muted">{{ application.applied_at|timesince }} ago</small>
+                                    </td>
+                                    <td>
+                                        <select class="form-select form-select-sm" 
+                                                onchange="updateApplicationStatus({{ application.id }}, this.value)"
+                                                style="min-width: 120px;">
+                                            {% for status_value, status_label in application.APPLICATION_STATUS %}
+                                                <option value="{{ status_value }}" 
+                                                        {% if application.status == status_value %}selected{% endif %}>
+                                                    {{ status_label }}
+                                                </option>
+                                            {% endfor %}
+                                        </select>
+                                    </td>
+                                    <td>
+                                        {% if application.resume %}
+                                            <a href="{{ application.resume.url }}" class="btn btn-sm btn-outline-primary" target="_blank">
+                                                <i class="fas fa-download me-1"></i>Download
+                                            </a>
+                                        {% else %}
+                                            <span class="text-muted">No resume</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a href="{% url 'view_public_profile' application.applicant.id %}" 
+                                               class="btn btn-sm btn-outline-info" title="View Profile">
+                                                <i class="fas fa-user"></i>
+                                            </a>
+                                            <a href="mailto:{{ application.applicant.email }}" 
+                                               class="btn btn-sm btn-outline-success" title="Send Email">
+                                                <i class="fas fa-envelope"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% if application.cover_letter %}
+                                    <tr class="table-light">
+                                        <td colspan="5">
+                                            <small class="text-muted">Cover Letter:</small>
+                                            <p class="mb-0 mt-1">{{ application.cover_letter|linebreaks }}</p>
+                                        </td>
+                                    </tr>
+                                {% endif %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-inbox fa-4x text-muted mb-3"></i>
+            <h4>No applications yet</h4>
+            <p class="text-muted">Applications will appear here as candidates apply to your job posting.</p>
+            <a href="{% url 'jobs:job_detail' job.id %}" class="btn btn-primary">
+                <i class="fas fa-eye me-1"></i>View Job Posting
+            </a>
+        </div>
+    {% endif %}
+</div>
+
+<script>
+function updateApplicationStatus(applicationId, newStatus) {
+    fetch(`/jobs/applications/${applicationId}/update-status/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: `status=${newStatus}`
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Show success message
+            const alert = document.createElement('div');
+            alert.className = 'alert alert-success alert-dismissible fade show position-fixed';
+            alert.style.cssText = 'top: 20px; right: 20px; z-index: 1050; min-width: 300px;';
+            alert.innerHTML = `
+                <i class="fas fa-check-circle me-2"></i>${data.message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.body.appendChild(alert);
+            
+            // Auto-remove after 3 seconds
+            setTimeout(() => {
+                if (alert.parentNode) {
+                    alert.remove();
+                }
+            }, 3000);
+        } else {
+            alert('Error updating status: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while updating the status.');
+    });
+}
+</script>
+
+<!-- Add CSRF token for AJAX -->
+{% csrf_token %}
+{% endblock %}

@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+
+{% block title %}My Job Postings{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>My Job Postings</h2>
+        <a href="{% url 'jobs:post_job' %}" class="btn btn-primary">
+            <i class="fas fa-plus me-1"></i>Post New Job
+        </a>
+    </div>
+    
+    {% if jobs %}
+        <div class="row">
+            {% for job in jobs %}
+                <div class="col-md-6 mb-4">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h5 class="card-title">
+                                    <a href="{% url 'jobs:job_detail' job.id %}" class="text-decoration-none">
+                                        {{ job.title }}
+                                    </a>
+                                </h5>
+                                <div>
+                                    {% if job.is_active %}
+                                        <span class="badge bg-success">Active</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Inactive</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <h6 class="card-subtitle mb-2 text-muted">{{ job.company }}</h6>
+                            <p class="card-text">
+                                <i class="fas fa-map-marker-alt text-muted me-1"></i>{{ job.location }}
+                                <span class="ms-3">
+                                    <i class="fas fa-briefcase text-muted me-1"></i>{{ job.get_employment_type_display }}
+                                </span>
+                            </p>
+                            
+                            <p class="card-text">{{ job.description|truncatewords:20 }}</p>
+                            
+                            <!-- Job Stats -->
+                            <div class="row text-center mb-3">
+                                <div class="col-4">
+                                    <h6 class="text-primary">{{ job.view_count }}</h6>
+                                    <small class="text-muted">Views</small>
+                                </div>
+                                <div class="col-4">
+                                    <h6 class="text-success">{{ job.application_count }}</h6>
+                                    <small class="text-muted">Applications</small>
+                                </div>
+                                <div class="col-4">
+                                    <h6 class="text-info">{{ job.required_skills.count }}</h6>
+                                    <small class="text-muted">Skills</small>
+                                </div>
+                            </div>
+                            
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">
+                                    Posted {{ job.posted_at|timesince }} ago
+                                </small>
+                                <div class="btn-group" role="group">
+                                    <a href="{% url 'jobs:edit_job' job.id %}" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <a href="{% url 'jobs:job_applications' job.id %}" class="btn btn-sm btn-outline-info">
+                                        <i class="fas fa-users"></i>
+                                    </a>
+                                    <a href="{% url 'jobs:delete_job' job.id %}" class="btn btn-sm btn-outline-danger">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-briefcase fa-4x text-muted mb-3"></i>
+            <h4>No job postings yet</h4>
+            <p class="text-muted">Start by posting your first job opening.</p>
+            <a href="{% url 'jobs:post_job' %}" class="btn btn-primary">
+                <i class="fas fa-plus me-1"></i>Post Your First Job
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

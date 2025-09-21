@@ -103,6 +103,70 @@
                                 {% endif %}
                             </div>
                         </div>
+                        
+                        <!-- User Type Selection -->
+                        <div class="row">
+                            <div class="col-12 mb-3">
+                                <div class="user-type-selection">
+                                    <label class="form-label fw-bold">Account Type *</label>
+                                    <p class="text-muted mb-3">Choose the type of account that best describes you</p>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <div class="user-type-card" data-type="job_seeker">
+                                                <input type="radio" name="user_type" value="job_seeker" id="user_type_job_seeker" class="d-none" checked>
+                                                <label for="user_type_job_seeker" class="user-type-label">
+                                                    <div class="card h-100 border-2">
+                                                        <div class="card-body text-center">
+                                                            <div class="user-type-icon mb-3">
+                                                                <i class="fas fa-user fa-3x text-primary"></i>
+                                                            </div>
+                                                            <h5 class="card-title">Job Seeker</h5>
+                                                            <p class="card-text text-muted">
+                                                                Looking for job opportunities, want to showcase your skills and experience to recruiters
+                                                            </p>
+                                                            <div class="features">
+                                                                <small class="text-muted">
+                                                                    <i class="fas fa-check text-success me-1"></i>Create professional profile<br>
+                                                                    <i class="fas fa-check text-success me-1"></i>Apply to jobs<br>
+                                                                    <i class="fas fa-check text-success me-1"></i>Connect with recruiters
+                                                                </small>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </label>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="col-md-6 mb-3">
+                                            <div class="user-type-card" data-type="recruiter">
+                                                <input type="radio" name="user_type" value="recruiter" id="user_type_recruiter" class="d-none">
+                                                <label for="user_type_recruiter" class="user-type-label">
+                                                    <div class="card h-100 border-2">
+                                                        <div class="card-body text-center">
+                                                            <div class="user-type-icon mb-3">
+                                                                <i class="fas fa-user-tie fa-3x text-success"></i>
+                                                            </div>
+                                                            <h5 class="card-title">Recruiter</h5>
+                                                            <p class="card-text text-muted">
+                                                                Hiring for your company, want to find and connect with talented candidates
+                                                            </p>
+                                                            <div class="features">
+                                                                <small class="text-muted">
+                                                                    <i class="fas fa-check text-success me-1"></i>Post job openings<br>
+                                                                    <i class="fas fa-check text-success me-1"></i>Search candidates<br>
+                                                                    <i class="fas fa-check text-success me-1"></i>Manage applications
+                                                                </small>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -448,6 +512,78 @@
         display: block;
     }
     
+    /* User Type Selection Styles */
+    .user-type-card {
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .user-type-label {
+        cursor: pointer;
+        margin: 0;
+        width: 100%;
+        height: 100%;
+    }
+    
+    .user-type-card .card {
+        border-color: #dee2e6;
+        transition: all 0.3s ease;
+        height: 100%;
+    }
+    
+    .user-type-card:hover .card {
+        border-color: #007bff;
+        box-shadow: 0 4px 12px rgba(0, 123, 255, 0.15);
+        transform: translateY(-2px);
+    }
+    
+    .user-type-card input[type="radio"]:checked + label .card {
+        border-color: #007bff;
+        background-color: #f8f9ff;
+        box-shadow: 0 4px 12px rgba(0, 123, 255, 0.2);
+        transform: translateY(-1px);
+    }
+    
+    .user-type-card input[type="radio"]:checked + label .card .user-type-icon i {
+        color: #007bff !important;
+    }
+    
+    .user-type-card input[type="radio"]:checked + label .card .card-title {
+        color: #007bff;
+        font-weight: 600;
+    }
+    
+    .user-type-icon {
+        width: 80px;
+        height: 80px;
+        margin: 0 auto;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #f8f9fa;
+        border-radius: 50%;
+        transition: all 0.3s ease;
+    }
+    
+    .user-type-card:hover .user-type-icon {
+        background: #e3f2fd;
+    }
+    
+    .user-type-card input[type="radio"]:checked + label .user-type-icon {
+        background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    }
+    
+    .user-type-card input[type="radio"]:checked + label .user-type-icon i {
+        color: white !important;
+    }
+    
+    .features {
+        text-align: left;
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid #eee;
+    }
+    
     .form-navigation {
         position: sticky;
         bottom: 0;
@@ -486,6 +622,55 @@
 
 {% block scripts %}
 <script>
+// User type selection handling
+document.addEventListener('DOMContentLoaded', function() {
+    const userTypeCards = document.querySelectorAll('.user-type-card');
+    const userTypeRadios = document.querySelectorAll('input[name="user_type"]');
+    
+    // Handle user type card clicks
+    userTypeCards.forEach(card => {
+        card.addEventListener('click', function() {
+            const radioButton = card.querySelector('input[type="radio"]');
+            radioButton.checked = true;
+            
+            // Update visual state
+            userTypeCards.forEach(c => c.classList.remove('selected'));
+            card.classList.add('selected');
+            
+            // Update form behavior based on selection
+            updateFormForUserType(radioButton.value);
+        });
+    });
+    
+    // Handle radio button changes
+    userTypeRadios.forEach(radio => {
+        radio.addEventListener('change', function() {
+            updateFormForUserType(this.value);
+        });
+    });
+    
+    function updateFormForUserType(userType) {
+        // You can add logic here to show/hide different form sections
+        // based on whether user selected job_seeker or recruiter
+        console.log('User type selected:', userType);
+        
+        // For example, you might want to show different steps for recruiters
+        if (userType === 'recruiter') {
+            // Could hide job seeker specific steps or modify form flow
+            // document.querySelector('.recruiter-specific').style.display = 'block';
+        } else {
+            // Show job seeker specific steps
+            // document.querySelector('.recruiter-specific').style.display = 'none';
+        }
+    }
+    
+    // Initialize with default selection
+    const defaultSelected = document.querySelector('input[name="user_type"]:checked');
+    if (defaultSelected) {
+        updateFormForUserType(defaultSelected.value);
+    }
+});
+
 let currentStep = 1;
 const totalSteps = 6;
 

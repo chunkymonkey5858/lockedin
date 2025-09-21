@@ -3,15 +3,21 @@ from django.contrib.auth.forms import UserCreationForm
 from django.forms import inlineformset_factory
 from .models import CustomUser, JobSeekerProfile, Skill, Education, WorkExperience, Link
 
-# Update just the widgets part in JobSeekerRegistrationForm
-class JobSeekerRegistrationForm(UserCreationForm):
+# Universal registration form that supports both job seekers and recruiters
+class UserRegistrationForm(UserCreationForm):
     first_name = forms.CharField(max_length=30, required=True, widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter your first name'}))
     last_name = forms.CharField(max_length=30, required=True, widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter your last name'}))
     email = forms.EmailField(required=True, widget=forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'Enter your email address'}))
+    user_type = forms.ChoiceField(
+        choices=CustomUser.USER_TYPE_CHOICES,
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        initial='job_seeker',
+        help_text="Choose your account type"
+    )
     
     class Meta:
         model = CustomUser
-        fields = ('username', 'first_name', 'last_name', 'email', 'password1', 'password2')
+        fields = ('username', 'first_name', 'last_name', 'email', 'user_type', 'password1', 'password2')
         widgets = {
             'username': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Choose a unique username'}),
         }
@@ -23,11 +29,19 @@ class JobSeekerRegistrationForm(UserCreationForm):
     
     def save(self, commit=True):
         user = super().save(commit=False)
-        user.user_type = 'job_seeker'
+        user.user_type = self.cleaned_data['user_type']
         user.email = self.cleaned_data['email']
         if commit:
             user.save()
         return user
+
+# Keep the old form for backward compatibility
+class JobSeekerRegistrationForm(UserRegistrationForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Hide user_type field and default to job_seeker
+        self.fields['user_type'].widget = forms.HiddenInput()
+        self.fields['user_type'].initial = 'job_seeker'
 
 class JobSeekerProfileForm(forms.ModelForm):
     class Meta:

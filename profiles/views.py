@@ -7,7 +7,7 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from .models import CustomUser, JobSeekerProfile
 from .forms import (
-    JobSeekerRegistrationForm, JobSeekerProfileForm, 
+    UserRegistrationForm, JobSeekerRegistrationForm, JobSeekerProfileForm, 
     SkillFormSet, EducationFormSet, WorkExperienceFormSet, LinkFormSet
 )
 
@@ -19,58 +19,52 @@ def create_professional_profile(request):
     
     if request.method == 'POST':
         # Handle user registration first
-        user_form = JobSeekerRegistrationForm(request.POST)
+        user_form = UserRegistrationForm(request.POST)
         
-        # Create empty profile for formsets
-        temp_profile = JobSeekerProfile()
-        profile_form = JobSeekerProfileForm(request.POST, request.FILES, instance=temp_profile)
-        skill_formset = SkillFormSet(request.POST, instance=temp_profile)
-        education_formset = EducationFormSet(request.POST, instance=temp_profile)
-        experience_formset = WorkExperienceFormSet(request.POST, instance=temp_profile)
-        link_formset = LinkFormSet(request.POST, instance=temp_profile)
-        
-        if (user_form.is_valid() and profile_form.is_valid() and 
-            skill_formset.is_valid() and education_formset.is_valid() and
-            experience_formset.is_valid() and link_formset.is_valid()):
-            
+        if user_form.is_valid():
             try:
                 with transaction.atomic():
                     # Create user
                     user = user_form.save()
                     
-                    # Create profile
-                    profile = profile_form.save(commit=False)
-                    profile.user = user
-                    profile.save()
-                    
-                    # Save related objects
-                    skill_formset.instance = profile
-                    skill_formset.save()
-                    
-                    education_formset.instance = profile
-                    education_formset.save()
-                    
-                    experience_formset.instance = profile
-                    experience_formset.save()
-                    
-                    link_formset.instance = profile
-                    link_formset.save()
-                    
-                    login(request, user)
-                    messages.success(request, 'Professional profile created successfully! Welcome to LockedIn.')
-                    return redirect('view_profile')
-                    
+                    # Create appropriate profile based on user type
+                    if user.user_type == 'recruiter':
+                        # Import here to avoid circular imports
+                        from recruiters.models import RecruiterProfile
+                        RecruiterProfile.objects.create(
+                            user=user,
+                            company='',
+                            title='',
+                            bio=''
+                        )
+                        login(request, user)
+                        messages.success(request, 'Recruiter account created successfully! Welcome to LockedIn.')
+                        return redirect('recruiters:dashboard')
+                    else:
+                        # Create job seeker profile (simplified for now)
+                        JobSeekerProfile.objects.create(
+                            user=user,
+                            headline='Looking for opportunities',
+                            bio='',
+                            location=''
+                        )
+                        login(request, user)
+                        messages.success(request, 'Job seeker account created successfully! Welcome to LockedIn.')
+                        return redirect('edit_profile')
+                        
             except Exception as e:
-                messages.error(request, 'An error occurred while creating your profile. Please try again.')
+                messages.error(request, f'An error occurred while creating your profile: {str(e)}')
         else:
             messages.error(request, 'Please correct the errors below.')
     else:
-        user_form = JobSeekerRegistrationForm()
-        profile_form = JobSeekerProfileForm()
-        skill_formset = SkillFormSet()
-        education_formset = EducationFormSet()
-        experience_formset = WorkExperienceFormSet()
-        link_formset = LinkFormSet()
+        user_form = UserRegistrationForm()
+        
+    # For now, we'll use simplified registration. The full profile form can be filled later.
+    profile_form = JobSeekerProfileForm()
+    skill_formset = SkillFormSet()
+    education_formset = EducationFormSet()
+    experience_formset = WorkExperienceFormSet()
+    link_formset = LinkFormSet()
     
     context = {
         'user_form': user_form,
@@ -86,6 +80,10 @@ def create_professional_profile(request):
 # Keep the old function for backward compatibility
 def register_job_seeker(request):
     """Redirect to the new comprehensive profile creation"""
+    return redirect('create_professional_profile')
+
+def register_redirect(request):
+    """Redirect register URL to create_professional_profile for consistency"""
     return redirect('create_professional_profile')
 
 @login_required
@@ -161,20 +159,61 @@ def edit_profile(request):
 
 @login_required
 def view_profile(request, user_id=None):
-    """View job seeker profile"""
+    """View user profile (job seeker or recruiter)"""
     if user_id:
-        user = get_object_or_404(CustomUser, id=user_id, user_type='job_seeker')
-        profile = get_object_or_404(JobSeekerProfile, user=user)
+        user = get_object_or_404(CustomUser, id=user_id)
         is_own_profile = request.user == user
         
-        # Check if profile is public or if it's the user's own profile
-        if not profile.is_public and not is_own_profile:
-            messages.error(request, 'This profile is private.')
-            return redirect('profile_list')
+        # Handle different user types
+        if user.user_type == 'job_seeker':
+            try:
+                profile = JobSeekerProfile.objects.get(user=user)
+                # Check if profile is public or if it's the user's own profile
+                if not profile.is_public and not is_own_profile:
+                    messages.error(request, 'This profile is private.')
+                    return redirect('profile_list')
+            except JobSeekerProfile.DoesNotExist:
+                messages.error(request, 'Job seeker profile not found.')
+                return redirect('profile_list')
+        elif user.user_type == 'recruiter':
+            # Redirect recruiters to their dashboard or show a recruiter profile view
+            try:
+                from recruiters.models import RecruiterProfile
+                profile = RecruiterProfile.objects.get(user=user)
+                # For now, redirect to recruiter dashboard or show basic info
+                if is_own_profile:
+                    return redirect('recruiters:dashboard')
+                else:
+                    # Show basic recruiter info for other users
+                    active_jobs_count = user.posted_jobs.filter(is_active=True).count()
+                    context = {
+                        'user': user,
+                        'profile': profile,
+                        'is_own_profile': is_own_profile,
+                        'is_recruiter': True,
+                        'active_jobs_count': active_jobs_count,
+                    }
+                    return render(request, 'profiles/recruiter_public_profile.html', context)
+            except RecruiterProfile.DoesNotExist:
+                messages.error(request, f'Recruiter profile not found for {user.username}. Please contact support.')
+                return redirect('home')
+            except Exception as e:
+                messages.error(request, f'An error occurred while loading the profile: {str(e)}')
+                return redirect('home')
+        else:
+            messages.error(request, 'Invalid user type.')
+            return redirect('home')
     else:
-        # Viewing own profile
-        profile = get_object_or_404(JobSeekerProfile, user=request.user)
-        is_own_profile = True
+        # Viewing own profile - redirect based on user type
+        if request.user.user_type == 'recruiter':
+            return redirect('recruiters:dashboard')
+        else:
+            try:
+                profile = JobSeekerProfile.objects.get(user=request.user)
+                is_own_profile = True
+            except JobSeekerProfile.DoesNotExist:
+                messages.error(request, 'Profile not found. Please create your profile first.')
+                return redirect('create_profile')
     
     context = {
         'profile': profile,
@@ -237,6 +276,12 @@ def delete_profile(request):
             messages.error(request, 'No profile found to delete.')
     
     return render(request, 'profiles/delete_profile.html')
+
+# Old register function - replaced by create_professional_profile
+# def register(request):
+#     """Simple registration view with user type selection"""
+#     # This function has been replaced by create_professional_profile
+#     # which provides a more comprehensive registration experience
 
 def home(request):
     """Home page view"""

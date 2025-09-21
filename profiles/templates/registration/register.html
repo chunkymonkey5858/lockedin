@@ -104,6 +104,27 @@
                             <small class="text-muted">We'll use this for important account notifications</small>
                         </div>
 
+                        <!-- User Type Field -->
+                        <div class="mb-3">
+                            <label for="{{ form.user_type.id_for_label }}" class="form-label">
+                                Account Type <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light">
+                                    <i class="fas fa-user-tag text-muted"></i>
+                                </span>
+                                {{ form.user_type }}
+                            </div>
+                            {% if form.user_type.errors %}
+                                {% for error in form.user_type.errors %}
+                                    <div class="text-danger">
+                                        <i class="fas fa-exclamation-circle me-1"></i>{{ error }}
+                                    </div>
+                                {% endfor %}
+                            {% endif %}
+                            <small class="text-muted">{{ form.user_type.help_text }}</small>
+                        </div>
+
                         <!-- Password Field -->
                         <div class="mb-3">
                             <label for="{{ form.password1.id_for_label }}" class="form-label">

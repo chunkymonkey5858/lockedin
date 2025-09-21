@@ -8,7 +8,8 @@ urlpatterns = [
     
     # Profile creation and registration
     path('create-professional-profile/', views.create_professional_profile, name='create_professional_profile'),
-    path('register/', views.register_job_seeker, name='register_job_seeker'),  # Redirects to create_professional_profile
+    path('register/', views.register_redirect, name='register'),  # Redirects to create_professional_profile
+    path('register-job-seeker/', views.register_job_seeker, name='register_job_seeker'),  # Redirects to create_professional_profile
     
     # Profile management
     path('profile/create/', views.create_profile, name='create_profile'),

@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+
+{% block title %}Saved Searches{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Saved Searches</h2>
+        <a href="{% url 'recruiters:create_saved_search' %}" class="btn btn-primary">
+            <i class="fas fa-plus me-1"></i>Create New Search
+        </a>
+    </div>
+    
+    {% if searches %}
+        <div class="row">
+            {% for search in searches %}
+                <div class="col-md-6 mb-4">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <h5 class="card-title">{{ search.name }}</h5>
+                                <div>
+                                    {% if search.is_active %}
+                                        <span class="badge bg-success">Active</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Inactive</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            {% if search.description %}
+                                <p class="card-text text-muted">{{ search.description }}</p>
+                            {% endif %}
+                            
+                            <div class="mb-3">
+                                <h6 class="text-muted">Search Criteria:</h6>
+                                <ul class="list-unstyled">
+                                    {% if search.location %}
+                                        <li><i class="fas fa-map-marker-alt text-muted me-2"></i>{{ search.location }}</li>
+                                    {% endif %}
+                                    {% if search.experience_level %}
+                                        <li><i class="fas fa-chart-line text-muted me-2"></i>{{ search.get_experience_level_display }}</li>
+                                    {% endif %}
+                                    {% if search.employment_type %}
+                                        <li><i class="fas fa-briefcase text-muted me-2"></i>{{ search.get_employment_type_display }}</li>
+                                    {% endif %}
+                                    {% if search.skills.exists %}
+                                        <li>
+                                            <i class="fas fa-tags text-muted me-2"></i>
+                                            {% for skill in search.skills.all|slice:":3" %}
+                                                <span class="badge bg-light text-dark me-1">{{ skill.name }}</span>
+                                            {% endfor %}
+                                            {% if search.skills.count > 3 %}
+                                                <span class="text-muted">+{{ search.skills.count|add:"-3" }} more</span>
+                                            {% endif %}
+                                        </li>
+                                    {% endif %}
+                                </ul>
+                            </div>
+                            
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">
+                                    Created {{ search.created_at|timesince }} ago
+                                </small>
+                                <div class="btn-group" role="group">
+                                    <a href="{% url 'recruiters:run_saved_search' search.id %}" class="btn btn-sm btn-primary">
+                                        <i class="fas fa-play me-1"></i>Run
+                                    </a>
+                                    <a href="{% url 'recruiters:delete_saved_search' search.id %}" class="btn btn-sm btn-outline-danger">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-search fa-4x text-muted mb-3"></i>
+            <h4>No saved searches yet</h4>
+            <p class="text-muted">Create your first saved search to quickly find candidates with specific criteria.</p>
+            <a href="{% url 'recruiters:create_saved_search' %}" class="btn btn-primary">
+                <i class="fas fa-plus me-1"></i>Create Your First Search
+            </a>
+        </div>
+    {% endif %}
+    
+    <div class="mt-4">
+        <a href="{% url 'recruiters:dashboard' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
+        </a>
+    </div>
+</div>
+{% endblock %}

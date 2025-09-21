@@ -1,0 +1,231 @@
+{% extends 'base.html' %}
+
+{% block title %}Application Submitted Successfully{% endblock %}
+
+{% block content %}
+<div class="success-page">
+    <div class="container">
+        <div class="row justify-content-center align-items-center min-vh-100">
+            <div class="col-md-8 text-center">
+                <div class="success-card">
+                    <div class="success-icon mb-4">
+                        <i class="fas fa-check-circle fa-5x text-success"></i>
+                    </div>
+                    
+                    <h1 class="display-4 mb-3">Application Submitted!</h1>
+                    <p class="lead mb-4">Thank you for your interest in the <strong>{{ job.title }}</strong> position at <strong>{{ job.company }}</strong>.</p>
+                    
+                    <div class="application-details mb-5">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <div class="detail-card">
+                                    <i class="fas fa-briefcase fa-2x text-primary mb-2"></i>
+                                    <h5>{{ job.title }}</h5>
+                                    <p class="text-muted">{{ job.company }} • {{ job.location }}</p>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="detail-card">
+                                    <i class="fas fa-clock fa-2x text-info mb-2"></i>
+                                    <h5>Submitted</h5>
+                                    <p class="text-muted">{{ application.applied_at|date:"F d, Y" }} at {{ application.applied_at|time:"g:i A" }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-info mb-4">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>What happens next?</strong> The hiring team will review your application and contact you if you're selected for an interview.
+                    </div>
+                    
+                    <div class="action-buttons">
+                        <a href="{% url 'jobs:job_list' %}" class="btn btn-primary btn-lg me-3">
+                            <i class="fas fa-search me-2"></i>Find More Jobs
+                        </a>
+                        <a href="{% url 'jobs:my_applications' %}" class="btn btn-outline-secondary btn-lg">
+                            <i class="fas fa-list me-2"></i>View My Applications
+                        </a>
+                    </div>
+                    
+                    <div class="mt-5 pt-4 border-top">
+                        <h6 class="text-muted mb-3">Share this opportunity</h6>
+                        <div class="share-buttons">
+                            <a href="https://twitter.com/intent/tweet?text=I just applied for {{ job.title }} at {{ job.company }} on LockedIn!" class="btn btn-outline-info btn-sm me-2" target="_blank">
+                                <i class="fab fa-twitter me-1"></i>Twitter
+                            </a>
+                            <a href="https://www.linkedin.com/sharing/share-offsite/?url={{ request.build_absolute_uri }}" class="btn btn-outline-primary btn-sm" target="_blank">
+                                <i class="fab fa-linkedin me-1"></i>LinkedIn
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.success-page {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+}
+
+.success-card {
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+    padding: 4rem 3rem;
+    max-width: 700px;
+    margin: 0 auto;
+}
+
+.success-icon {
+    animation: bounceIn 1s ease-out;
+}
+
+@keyframes bounceIn {
+    0% {
+        opacity: 0;
+        transform: scale(0.3);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1.05);
+    }
+    70% {
+        transform: scale(0.9);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.detail-card {
+    background: #f8f9fa;
+    border-radius: 15px;
+    padding: 2rem 1.5rem;
+    height: 100%;
+    transition: all 0.3s ease;
+}
+
+.detail-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+}
+
+.btn-lg {
+    padding: 1rem 2rem;
+    font-size: 1.1rem;
+    border-radius: 12px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    box-shadow: 0 5px 20px rgba(102, 126, 234, 0.3);
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+}
+
+.btn-outline-secondary {
+    border: 2px solid #6c757d;
+    color: #6c757d;
+    font-weight: 600;
+}
+
+.btn-outline-secondary:hover {
+    background: #6c757d;
+    transform: translateY(-2px);
+}
+
+.share-buttons .btn {
+    border-radius: 20px;
+    font-size: 0.9rem;
+}
+
+.alert {
+    border-radius: 12px;
+    border: none;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .success-card {
+        padding: 2rem 1.5rem;
+        margin: 1rem;
+    }
+    
+    .action-buttons .btn {
+        width: 100%;
+        margin-bottom: 1rem;
+    }
+    
+    .action-buttons .me-3 {
+        margin-right: 0 !important;
+    }
+}
+
+@media (max-width: 576px) {
+    .success-card {
+        padding: 1.5rem 1rem;
+    }
+    
+    .display-4 {
+        font-size: 2rem;
+    }
+}
+</style>
+
+<script>
+// Add some celebratory confetti effect
+document.addEventListener('DOMContentLoaded', function() {
+    // Simple confetti effect
+    const colors = ['#667eea', '#764ba2', '#28a745', '#ffc107', '#dc3545'];
+    
+    function createConfetti() {
+        const confetti = document.createElement('div');
+        confetti.style.cssText = `
+            position: fixed;
+            top: -10px;
+            left: ${Math.random() * 100}vw;
+            width: 10px;
+            height: 10px;
+            background: ${colors[Math.floor(Math.random() * colors.length)]};
+            z-index: 1000;
+            pointer-events: none;
+            animation: confetti-fall ${Math.random() * 3 + 2}s linear forwards;
+        `;
+        document.body.appendChild(confetti);
+        
+        setTimeout(() => {
+            confetti.remove();
+        }, 5000);
+    }
+    
+    // Add CSS for confetti animation
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes confetti-fall {
+            to {
+                transform: translateY(100vh) rotate(360deg);
+                opacity: 0;
+            }
+        }
+    `;
+    document.head.appendChild(style);
+    
+    // Create confetti
+    for (let i = 0; i < 50; i++) {
+        setTimeout(createConfetti, i * 100);
+    }
+});
+</script>
+{% endblock %}

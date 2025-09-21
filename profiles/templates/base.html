@@ -237,15 +237,19 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <div class="navbar-nav ms-auto">
                     {% if user.is_authenticated %}
-                        <a class="nav-link" href="{% url 'jobs:job_list' %}">
+                        <a class="nav-link" href="{% url 'job_list' %}">
                             <i class="fas fa-briefcase me-1"></i>Jobs
                         </a>
-                        {% if user.user_type == 'recruiter' %}
-                            <a class="nav-link" href="{% url 'recruiters:search_candidates' %}">
-                                <i class="fas fa-search me-1"></i>Find Candidates
+                        {% if user.user_type == 'job_seeker' %}
+                            <a class="nav-link" href="{% url 'my_applications' %}">
+                                <i class="fas fa-paper-plane me-1"></i>My Applications
                             </a>
-                            <a class="nav-link" href="{% url 'recruiters:dashboard' %}">
-                                <i class="fas fa-tachometer-alt me-1"></i>Dashboard
+                        {% elif user.user_type == 'recruiter' %}
+                            <a class="nav-link" href="{% url 'post_job' %}">
+                                <i class="fas fa-plus me-1"></i>Post Job
+                            </a>
+                            <a class="nav-link" href="{% url 'my_job_postings' %}">
+                                <i class="fas fa-list me-1"></i>My Jobs
                             </a>
                         {% endif %}
                         <a class="nav-link" href="{% url 'view_profile' %}">
@@ -261,12 +265,12 @@
                             <i class="fas fa-sign-out-alt me-1"></i>Logout
                         </a>
                     {% else %}
-                        <a class="nav-link" href="{% url 'jobs:job_list' %}">
+                        <a class="nav-link" href="{% url 'job_list' %}">
                             <i class="fas fa-briefcase me-1"></i>Jobs
                         </a>
-            <a class="nav-link" href="{% url 'create_professional_profile' %}">
-                <i class="fas fa-user-plus me-1"></i>Register
-            </a>
+                        <a class="nav-link" href="{% url 'create_professional_profile' %}">
+                            <i class="fas fa-user-plus me-1"></i>Create Profile
+                        </a>
                         <a class="nav-link" href="{% url 'login' %}">
                             <i class="fas fa-sign-in-alt me-1"></i>Login
                         </a>

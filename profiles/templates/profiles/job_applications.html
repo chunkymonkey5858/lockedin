@@ -1,0 +1,348 @@
+{% extends 'base.html' %}
+
+{% block title %}Applications for {{ job.title }} - LockedIn{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h2 mb-0">
+                        <i class="fas fa-users me-2"></i>Applications for {{ job.title }}
+                    </h1>
+                    <p class="text-muted mb-0">{{ job.company }} • {{ job.location }}</p>
+                </div>
+                <a href="{% url 'my_job_postings' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Jobs
+                </a>
+            </div>
+            
+            {% if applications %}
+                <div class="row">
+                    {% for application in applications %}
+                        <div class="col-lg-6 mb-4">
+                            <div class="card h-100 application-card">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-start mb-3">
+                                        {% if application.applicant.job_seeker_profile.profile_picture %}
+                                            <img src="{{ application.applicant.job_seeker_profile.profile_picture.url }}" 
+                                                 alt="Profile Picture" class="rounded-circle me-3" width="60" height="60">
+                                        {% else %}
+                                            <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center me-3" 
+                                                 style="width: 60px; height: 60px;">
+                                                <i class="fas fa-user text-white"></i>
+                                            </div>
+                                        {% endif %}
+                                        
+                                        <div class="flex-grow-1">
+                                            <div class="d-flex justify-content-between align-items-start">
+                                                <div>
+                                                    <h5 class="card-title mb-1">
+                                                        <a href="{% url 'view_public_profile' application.applicant.id %}" class="text-decoration-none">
+                                                            {{ application.applicant.get_full_name|default:application.applicant.username }}
+                                                        </a>
+                                                    </h5>
+                                                    <p class="text-muted mb-1">{{ application.applicant.job_seeker_profile.headline }}</p>
+                                                    <p class="text-muted small mb-0">
+                                                        <i class="fas fa-map-marker-alt me-1"></i>
+                                                        {{ application.applicant.job_seeker_profile.location|default:"Location not specified" }}
+                                                    </p>
+                                                </div>
+                                                <span class="badge status-badge status-{{ application.status }}">
+                                                    {{ application.get_status_display }}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row mb-3">
+                                        <div class="col-6">
+                                            <small class="text-muted">
+                                                <i class="fas fa-calendar me-1"></i>
+                                                Applied {{ application.applied_at|date:"M d, Y" }}
+                                            </small>
+                                        </div>
+                                        <div class="col-6">
+                                            <small class="text-muted">
+                                                <i class="fas fa-clock me-1"></i>
+                                                {{ application.applied_at|timesince }} ago
+                                            </small>
+                                        </div>
+                                    </div>
+                                    
+                                    {% if application.cover_letter %}
+                                        <div class="mb-3">
+                                            <h6 class="small text-muted mb-1">Cover Letter:</h6>
+                                            <p class="small">{{ application.cover_letter|truncatewords:25 }}</p>
+                                        </div>
+                                    {% endif %}
+                                    
+                                    <!-- Skills Preview -->
+                                    {% if application.applicant.job_seeker_profile.skills.exists %}
+                                        <div class="mb-3">
+                                            <h6 class="small text-muted mb-1">Skills:</h6>
+                                            <div class="skill-tags">
+                                                {% for skill in application.applicant.job_seeker_profile.skills.all|slice:":5" %}
+                                                    <span class="badge bg-light text-dark me-1 mb-1">{{ skill.name }}</span>
+                                                {% endfor %}
+                                                {% if application.applicant.job_seeker_profile.skills.count > 5 %}
+                                                    <span class="badge bg-secondary me-1 mb-1">+{{ application.applicant.job_seeker_profile.skills.count|add:"-5" }} more</span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    {% endif %}
+                                    
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <a href="{% url 'view_public_profile' application.applicant.id %}" class="btn btn-outline-primary btn-sm">
+                                            <i class="fas fa-user me-1"></i>View Profile
+                                        </a>
+                                        
+                                        <div class="btn-group btn-group-sm">
+                                            <button type="button" class="btn btn-outline-success" 
+                                                    onclick="updateApplicationStatus({{ application.id }}, 'interview')">
+                                                <i class="fas fa-calendar-check"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-outline-warning" 
+                                                    onclick="updateApplicationStatus({{ application.id }}, 'reviewed')">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-outline-danger" 
+                                                    onclick="updateApplicationStatus({{ application.id }}, 'rejected')">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+                
+                <!-- Application Statistics -->
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h4 class="h5 mb-0">Application Statistics</h4>
+                            </div>
+                            <div class="card-body">
+                                <div class="row text-center">
+                                    <div class="col-md-3">
+                                        <div class="stat-item">
+                                            <h3 class="text-primary">{{ applications|length }}</h3>
+                                            <p class="text-muted mb-0">Total Applications</p>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="stat-item">
+                                            <h3 class="text-info">
+                                                {% for app in applications %}
+                                                    {% if app.status == 'submitted' %}{{ forloop.counter0|add:1 }}{% endif %}
+                                                {% empty %}0{% endfor %}
+                                            </h3>
+                                            <p class="text-muted mb-0">New Applications</p>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="stat-item">
+                                            <h3 class="text-warning">
+                                                {% for app in applications %}
+                                                    {% if app.status == 'interview' %}{{ forloop.counter0|add:1 }}{% endif %}
+                                                {% empty %}0{% endfor %}
+                                            </h3>
+                                            <p class="text-muted mb-0">Interviews Scheduled</p>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="stat-item">
+                                            <h3 class="text-success">
+                                                {% for app in applications %}
+                                                    {% if app.status == 'accepted' %}{{ forloop.counter0|add:1 }}{% endif %}
+                                                {% empty %}0{% endfor %}
+                                            </h3>
+                                            <p class="text-muted mb-0">Accepted</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <div class="mb-4">
+                        <i class="fas fa-users text-muted" style="font-size: 4rem;"></i>
+                    </div>
+                    <h3 class="text-muted">No Applications Yet</h3>
+                    <p class="text-muted">This job posting hasn't received any applications yet.</p>
+                    <a href="{% url 'job_detail' job.id %}" class="btn btn-outline-primary">
+                        <i class="fas fa-eye me-2"></i>View Job Posting
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Status Update Modal -->
+<div class="modal fade" id="statusModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Update Application Status</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="statusForm">
+                    {% csrf_token %}
+                    <input type="hidden" id="applicationId" name="application_id">
+                    <div class="mb-3">
+                        <label for="status" class="form-label">Status</label>
+                        <select class="form-control" id="status" name="status">
+                            <option value="submitted">Submitted</option>
+                            <option value="reviewed">Under Review</option>
+                            <option value="interview">Interview Scheduled</option>
+                            <option value="accepted">Accepted</option>
+                            <option value="rejected">Rejected</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">Notes (Optional)</label>
+                        <textarea class="form-control" id="notes" name="notes" rows="3" 
+                                  placeholder="Add any notes about this application..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="submitStatusUpdate()">Update Status</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function updateApplicationStatus(applicationId, status) {
+    document.getElementById('applicationId').value = applicationId;
+    document.getElementById('status').value = status;
+    
+    const modal = new bootstrap.Modal(document.getElementById('statusModal'));
+    modal.show();
+}
+
+function submitStatusUpdate() {
+    const form = document.getElementById('statusForm');
+    const formData = new FormData(form);
+    const applicationId = formData.get('application_id');
+    
+    fetch(`/update-application-status/${applicationId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+        },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Close modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('statusModal'));
+            modal.hide();
+            
+            // Show success message
+            showAlert('success', data.message);
+            
+            // Reload page to show updated status
+            setTimeout(() => {
+                location.reload();
+            }, 1000);
+        } else {
+            showAlert('danger', data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert('danger', 'An error occurred. Please try again.');
+    });
+}
+
+function showAlert(type, message) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    // Insert at the top of the container
+    const container = document.querySelector('.container');
+    container.insertBefore(alertDiv, container.firstChild);
+    
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.remove();
+        }
+    }, 5000);
+}
+</script>
+
+<style>
+.application-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    border: 1px solid var(--border-color);
+}
+
+.application-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+.status-badge {
+    font-size: 0.75rem;
+    padding: 0.375rem 0.75rem;
+}
+
+.status-submitted {
+    background-color: #6c757d !important;
+}
+
+.status-reviewed {
+    background-color: #0dcaf0 !important;
+}
+
+.status-interview {
+    background-color: #ffc107 !important;
+    color: #000 !important;
+}
+
+.status-accepted {
+    background-color: #198754 !important;
+}
+
+.status-rejected {
+    background-color: #dc3545 !important;
+}
+
+.skill-tags .badge {
+    font-size: 0.75rem;
+}
+
+.stat-item h3 {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.card {
+    border: 1px solid var(--border-color);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.card-header {
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border-bottom: 1px solid var(--border-color);
+}
+</style>
+{% endblock %}

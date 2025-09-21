@@ -9,9 +9,25 @@ class CustomUser(AbstractUser):
         ('recruiter', 'Recruiter'),
         ('admin', 'Administrator'),
     ]
+    
+    STATUS_CHOICES = [
+        ('active', 'Active'),
+        ('suspended', 'Suspended'),
+        ('flagged', 'Flagged'),
+    ]
+    
     user_type = models.CharField(max_length=20, choices=USER_TYPE_CHOICES, default='job_seeker')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    
+    def is_active_user(self):
+        """Check if user is active (not suspended)"""
+        return self.status == 'active'
+    
+    def is_flagged(self):
+        """Check if user is flagged for suspicious activity"""
+        return self.status == 'flagged'
 
 class JobSeekerProfile(models.Model):
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name='job_seeker_profile')
@@ -113,3 +129,31 @@ class Link(models.Model):
     
     def __str__(self):
         return f"{self.title} ({self.link_type})"
+
+class AdminActionLog(models.Model):
+    ACTION_TYPES = [
+        ('suspend', 'Suspend User'),
+        ('reactivate', 'Reactivate User'),
+        ('delete', 'Delete User'),
+        ('change_role', 'Change User Role'),
+        ('flag', 'Flag User'),
+        ('unflag', 'Unflag User'),
+    ]
+    
+    admin_user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='admin_actions')
+    target_user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='admin_action_targets')
+    action_type = models.CharField(max_length=20, choices=ACTION_TYPES)
+    description = models.TextField(help_text="Description of the action taken")
+    previous_value = models.CharField(max_length=200, blank=True, help_text="Previous value before change")
+    new_value = models.CharField(max_length=200, blank=True, help_text="New value after change")
+    ip_address = models.GenericIPAddressField(blank=True, null=True)
+    user_agent = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Admin Action Log'
+        verbose_name_plural = 'Admin Action Logs'
+    
+    def __str__(self):
+        return f"{self.admin_user.username} {self.get_action_type_display()} {self.target_user.username} on {self.created_at.strftime('%Y-%m-%d %H:%M')}"

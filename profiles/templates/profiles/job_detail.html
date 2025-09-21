@@ -1,0 +1,284 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ job.title }} at {{ job.company }} - LockedIn{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h1 class="h3 mb-2">{{ job.title }}</h1>
+                            <h2 class="h5 text-muted mb-0">{{ job.company }}</h2>
+                        </div>
+                        <span class="badge bg-primary fs-6">{{ job.get_employment_type_display }}</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <p class="mb-2">
+                                <i class="fas fa-map-marker-alt text-primary me-2"></i>
+                                <strong>Location:</strong> {{ job.location }}
+                            </p>
+                        </div>
+                        {% if job.salary_range %}
+                            <div class="col-md-6">
+                                <p class="mb-2">
+                                    <i class="fas fa-dollar-sign text-success me-2"></i>
+                                    <strong>Salary:</strong> {{ job.salary_range }}
+                                </p>
+                            </div>
+                        {% endif %}
+                        <div class="col-md-6">
+                            <p class="mb-2">
+                                <i class="fas fa-clock text-info me-2"></i>
+                                <strong>Posted:</strong> {{ job.posted_at|timesince }} ago
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <p class="mb-2">
+                                <i class="fas fa-users text-warning me-2"></i>
+                                <strong>Applications:</strong> {{ job.application_count }}
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h4 class="h5 mb-3">Job Description</h4>
+                        <div class="job-description">
+                            {{ job.description|linebreaks }}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h4 class="h5 mb-3">Requirements</h4>
+                        <div class="job-requirements">
+                            {{ job.requirements|linebreaks }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="h5 mb-0">Apply for this Position</h4>
+                </div>
+                <div class="card-body">
+                    {% if user.user_type == 'job_seeker' %}
+                        {% if has_applied %}
+                            <div class="alert alert-success">
+                                <i class="fas fa-check-circle me-2"></i>
+                                You have already applied to this position!
+                            </div>
+                            <a href="{% url 'my_applications' %}" class="btn btn-outline-primary w-100">
+                                <i class="fas fa-list me-2"></i>View My Applications
+                            </a>
+                        {% else %}
+                            {% if user_profile %}
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    Your profile information will be automatically included with your application.
+                                </div>
+                                
+                                <form id="apply-form">
+                                    {% csrf_token %}
+                                    <div class="mb-3">
+                                        <label for="cover-letter" class="form-label">Cover Letter (Optional)</label>
+                                        <textarea class="form-control" id="cover-letter" name="cover_letter" rows="4" 
+                                                  placeholder="Add a personalized message to stand out..."></textarea>
+                                    </div>
+                                    
+                                    <button type="button" class="btn btn-primary w-100" id="apply-button" onclick="oneClickApply({{ job.id }})">
+                                        <i class="fas fa-paper-plane me-2"></i>Apply Now
+                                    </button>
+                                </form>
+                                
+                                <div class="mt-3">
+                                    <small class="text-muted">
+                                        <i class="fas fa-shield-alt me-1"></i>
+                                        Your application will include your complete profile information.
+                                    </small>
+                                </div>
+                            {% else %}
+                                <div class="alert alert-warning">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                    Please complete your profile before applying to jobs.
+                                </div>
+                                <a href="{% url 'edit_profile' %}" class="btn btn-warning w-100">
+                                    <i class="fas fa-user-edit me-2"></i>Complete Profile
+                                </a>
+                            {% endif %}
+                        {% endif %}
+                    {% else %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Only job seekers can apply to positions.
+                        </div>
+                        {% if user.user_type == 'recruiter' %}
+                            <a href="{% url 'job_applications' job.id %}" class="btn btn-outline-primary w-100">
+                                <i class="fas fa-users me-2"></i>View Applications
+                            </a>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Profile Preview for Job Seekers -->
+            {% if user.user_type == 'job_seeker' and user_profile and not has_applied %}
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h4 class="h5 mb-0">Your Profile Preview</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-3">
+                            {% if user_profile.profile_picture %}
+                                <img src="{{ user_profile.profile_picture.url }}" alt="Profile Picture" 
+                                     class="rounded-circle me-3" width="50" height="50">
+                            {% else %}
+                                <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center me-3" 
+                                     style="width: 50px; height: 50px;">
+                                    <i class="fas fa-user text-white"></i>
+                                </div>
+                            {% endif %}
+                            <div>
+                                <h6 class="mb-0">{{ user.get_full_name|default:user.username }}</h6>
+                                <small class="text-muted">{{ user_profile.headline }}</small>
+                            </div>
+                        </div>
+                        
+                        {% if user_profile.bio %}
+                            <p class="small text-muted mb-2">{{ user_profile.bio|truncatewords:15 }}</p>
+                        {% endif %}
+                        
+                        <div class="small">
+                            {% if user_profile.location %}
+                                <p class="mb-1">
+                                    <i class="fas fa-map-marker-alt me-1"></i>{{ user_profile.location }}
+                                </p>
+                            {% endif %}
+                            {% if user_profile.phone %}
+                                <p class="mb-1">
+                                    <i class="fas fa-phone me-1"></i>{{ user_profile.phone }}
+                                </p>
+                            {% endif %}
+                        </div>
+                        
+                        <a href="{% url 'edit_profile' %}" class="btn btn-outline-secondary btn-sm w-100 mt-2">
+                            <i class="fas fa-edit me-1"></i>Edit Profile
+                        </a>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+function oneClickApply(jobId) {
+    const coverLetter = document.getElementById('cover-letter').value;
+    const applyButton = document.getElementById('apply-button');
+    const originalText = applyButton.innerHTML;
+    
+    // Disable button and show loading state
+    applyButton.disabled = true;
+    applyButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Applying...';
+    
+    fetch(`/jobs/${jobId}/apply/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: `cover_letter=${encodeURIComponent(coverLetter)}`
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Show success message
+            showAlert('success', data.message);
+            
+            // Update UI to show applied status
+            applyButton.innerHTML = '<i class="fas fa-check me-2"></i>Applied Successfully!';
+            applyButton.className = 'btn btn-success w-100';
+            
+            // Hide the form and show success message
+            document.getElementById('apply-form').style.display = 'none';
+            
+            // Add a link to view applications
+            const successDiv = document.createElement('div');
+            successDiv.className = 'alert alert-success';
+            successDiv.innerHTML = `
+                <i class="fas fa-check-circle me-2"></i>
+                ${data.message}
+                <div class="mt-2">
+                    <a href="{% url 'my_applications' %}" class="btn btn-outline-success btn-sm">
+                        <i class="fas fa-list me-1"></i>View My Applications
+                    </a>
+                </div>
+            `;
+            document.querySelector('.card-body').appendChild(successDiv);
+        } else {
+            // Show error message
+            showAlert('danger', data.message);
+            
+            // Re-enable button
+            applyButton.disabled = false;
+            applyButton.innerHTML = originalText;
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert('danger', 'An error occurred. Please try again.');
+        
+        // Re-enable button
+        applyButton.disabled = false;
+        applyButton.innerHTML = originalText;
+    });
+}
+
+function showAlert(type, message) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    // Insert at the top of the card body
+    const cardBody = document.querySelector('.card-body');
+    cardBody.insertBefore(alertDiv, cardBody.firstChild);
+    
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.remove();
+        }
+    }, 5000);
+}
+</script>
+
+<style>
+.job-description, .job-requirements {
+    line-height: 1.6;
+}
+
+.job-description p, .job-requirements p {
+    margin-bottom: 1rem;
+}
+
+.card {
+    border: 1px solid var(--border-color);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.card-header {
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border-bottom: 1px solid var(--border-color);
+}
+</style>
+{% endblock %}

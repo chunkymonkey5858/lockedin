@@ -1,0 +1,203 @@
+{% extends 'base.html' %}
+
+{% block title %}My Applications - LockedIn{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h2 mb-0">
+                    <i class="fas fa-paper-plane me-2"></i>My Applications
+                </h1>
+                <a href="{% url 'job_list' %}" class="btn btn-outline-primary">
+                    <i class="fas fa-search me-2"></i>Browse Jobs
+                </a>
+            </div>
+            
+            {% if applications %}
+                <div class="row">
+                    {% for application in applications %}
+                        <div class="col-lg-6 mb-4">
+                            <div class="card h-100 application-card">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start mb-3">
+                                        <div>
+                                            <h5 class="card-title mb-1">
+                                                <a href="{% url 'job_detail' application.job.id %}" class="text-decoration-none">
+                                                    {{ application.job.title }}
+                                                </a>
+                                            </h5>
+                                            <p class="text-muted mb-1">{{ application.job.company }}</p>
+                                            <p class="text-muted small mb-0">
+                                                <i class="fas fa-map-marker-alt me-1"></i>{{ application.job.location }}
+                                            </p>
+                                        </div>
+                                        <span class="badge status-badge status-{{ application.status }}">
+                                            {{ application.get_status_display }}
+                                        </span>
+                                    </div>
+                                    
+                                    <div class="row mb-3">
+                                        <div class="col-6">
+                                            <small class="text-muted">
+                                                <i class="fas fa-calendar me-1"></i>
+                                                Applied {{ application.applied_at|date:"M d, Y" }}
+                                            </small>
+                                        </div>
+                                        <div class="col-6">
+                                            <small class="text-muted">
+                                                <i class="fas fa-clock me-1"></i>
+                                                {{ application.applied_at|timesince }} ago
+                                            </small>
+                                        </div>
+                                    </div>
+                                    
+                                    {% if application.cover_letter %}
+                                        <div class="mb-3">
+                                            <h6 class="small text-muted mb-1">Cover Letter:</h6>
+                                            <p class="small">{{ application.cover_letter|truncatewords:20 }}</p>
+                                        </div>
+                                    {% endif %}
+                                    
+                                    {% if application.notes %}
+                                        <div class="mb-3">
+                                            <h6 class="small text-muted mb-1">Recruiter Notes:</h6>
+                                            <p class="small text-info">{{ application.notes }}</p>
+                                        </div>
+                                    {% endif %}
+                                    
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <a href="{% url 'job_detail' application.job.id %}" class="btn btn-outline-primary btn-sm">
+                                            <i class="fas fa-eye me-1"></i>View Job
+                                        </a>
+                                        <small class="text-muted">
+                                            Job Type: {{ application.job.get_employment_type_display }}
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+                
+                <!-- Application Statistics -->
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h4 class="h5 mb-0">Application Statistics</h4>
+                            </div>
+                            <div class="card-body">
+                                <div class="row text-center">
+                                    <div class="col-md-3">
+                                        <div class="stat-item">
+                                            <h3 class="text-primary">{{ applications|length }}</h3>
+                                            <p class="text-muted mb-0">Total Applications</p>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="stat-item">
+                                            <h3 class="text-info">
+                                                {% for app in applications %}
+                                                    {% if app.status == 'submitted' %}{{ forloop.counter0|add:1 }}{% endif %}
+                                                {% empty %}0{% endfor %}
+                                            </h3>
+                                            <p class="text-muted mb-0">Pending Review</p>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="stat-item">
+                                            <h3 class="text-warning">
+                                                {% for app in applications %}
+                                                    {% if app.status == 'interview' %}{{ forloop.counter0|add:1 }}{% endif %}
+                                                {% empty %}0{% endfor %}
+                                            </h3>
+                                            <p class="text-muted mb-0">Interviews</p>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="stat-item">
+                                            <h3 class="text-success">
+                                                {% for app in applications %}
+                                                    {% if app.status == 'accepted' %}{{ forloop.counter0|add:1 }}{% endif %}
+                                                {% empty %}0{% endfor %}
+                                            </h3>
+                                            <p class="text-muted mb-0">Accepted</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <div class="mb-4">
+                        <i class="fas fa-paper-plane text-muted" style="font-size: 4rem;"></i>
+                    </div>
+                    <h3 class="text-muted">No Applications Yet</h3>
+                    <p class="text-muted">You haven't applied to any jobs yet. Start exploring opportunities!</p>
+                    <a href="{% url 'job_list' %}" class="btn btn-primary">
+                        <i class="fas fa-search me-2"></i>Browse Available Jobs
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.application-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    border: 1px solid var(--border-color);
+}
+
+.application-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+.status-badge {
+    font-size: 0.75rem;
+    padding: 0.375rem 0.75rem;
+}
+
+.status-submitted {
+    background-color: #6c757d !important;
+}
+
+.status-reviewed {
+    background-color: #0dcaf0 !important;
+}
+
+.status-interview {
+    background-color: #ffc107 !important;
+    color: #000 !important;
+}
+
+.status-accepted {
+    background-color: #198754 !important;
+}
+
+.status-rejected {
+    background-color: #dc3545 !important;
+}
+
+.stat-item h3 {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.card {
+    border: 1px solid var(--border-color);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.card-header {
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border-bottom: 1px solid var(--border-color);
+}
+</style>
+{% endblock %}

@@ -105,11 +105,7 @@ def apply_to_job(request, job_id):
             application = form.save(commit=False)
             application.job = job
             application.applicant = request.user
-            application.save()
-            
-            # Update application count
-            job.application_count += 1
-            job.save(update_fields=['application_count'])
+            application.save()  # Application count will be updated automatically via signals
             
             messages.success(request, 'Your application has been submitted successfully!')
             return redirect('jobs:application_success', job_id=job_id, application_id=application.id)

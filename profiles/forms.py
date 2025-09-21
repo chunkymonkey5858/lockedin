@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.forms import inlineformset_factory
-from .models import CustomUser, JobSeekerProfile, Skill, Education, WorkExperience, Link
+from .models import CustomUser, JobSeekerProfile, Skill, Education, WorkExperience, Link, AdminActionLog
 
 # Universal registration form that supports both job seekers and recruiters
 class UserRegistrationForm(UserCreationForm):
@@ -212,3 +212,80 @@ LinkFormSet = inlineformset_factory(
     JobSeekerProfile, Link, form=LinkForm,
     extra=2, can_delete=True, can_delete_extra=False
 )
+
+# Admin forms
+class UserSearchForm(forms.Form):
+    search = forms.CharField(
+        max_length=200,
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Search by username, email, or name...'
+        })
+    )
+    user_type = forms.ChoiceField(
+        choices=[('', 'All Roles')] + CustomUser.USER_TYPE_CHOICES,
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+    status = forms.ChoiceField(
+        choices=[('', 'All Statuses')] + CustomUser.STATUS_CHOICES,
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+
+class UserStatusUpdateForm(forms.Form):
+    STATUS_CHOICES = [
+        ('active', 'Active'),
+        ('suspended', 'Suspended'),
+        ('flagged', 'Flagged'),
+    ]
+    
+    status = forms.ChoiceField(
+        choices=STATUS_CHOICES,
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+    reason = forms.CharField(
+        max_length=500,
+        required=False,
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': 3,
+            'placeholder': 'Optional: Reason for status change...'
+        })
+    )
+
+class UserRoleUpdateForm(forms.Form):
+    ROLE_CHOICES = [
+        ('job_seeker', 'Job Seeker'),
+        ('recruiter', 'Recruiter'),
+    ]
+    
+    user_type = forms.ChoiceField(
+        choices=ROLE_CHOICES,
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+    reason = forms.CharField(
+        max_length=500,
+        required=False,
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': 3,
+            'placeholder': 'Optional: Reason for role change...'
+        })
+    )
+
+class UserDeleteForm(forms.Form):
+    confirm_delete = forms.BooleanField(
+        required=True,
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'})
+    )
+    reason = forms.CharField(
+        max_length=500,
+        required=True,
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': 3,
+            'placeholder': 'Reason for permanent deletion (required)...'
+        })
+    )

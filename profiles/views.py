@@ -358,19 +358,32 @@ def job_list(request):
     if work_location:
         jobs = jobs.filter(work_location=work_location)
     
+    # Salary overlap logic (use USD values directly). A job with range [A, B]
+    # overlaps with filter range [C, D] iff A <= D and B >= C.
+    # Handle partial inputs gracefully (only C or only D provided).
+    from decimal import Decimal, InvalidOperation
+    parsed_salary_min = None
+    parsed_salary_max = None
     if salary_min:
         try:
-            salary_min_value = float(salary_min)
-            jobs = jobs.filter(salary_max__gte=salary_min_value)
-        except ValueError:
-            pass
-    
+            parsed_salary_min = Decimal(salary_min)
+        except (InvalidOperation, ValueError):
+            parsed_salary_min = None
     if salary_max:
         try:
-            salary_max_value = float(salary_max)
-            jobs = jobs.filter(salary_min__lte=salary_max_value)
-        except ValueError:
-            pass
+            parsed_salary_max = Decimal(salary_max)
+        except (InvalidOperation, ValueError):
+            parsed_salary_max = None
+
+    if parsed_salary_min is not None and parsed_salary_max is not None:
+        # Overlap condition with both bounds provided
+        jobs = jobs.filter(salary_min__lte=parsed_salary_max, salary_max__gte=parsed_salary_min)
+    elif parsed_salary_min is not None:
+        # Any job whose max >= C (lower bound)
+        jobs = jobs.filter(salary_max__gte=parsed_salary_min)
+    elif parsed_salary_max is not None:
+        # Any job whose min <= D (upper bound)
+        jobs = jobs.filter(salary_min__lte=parsed_salary_max)
     
     if visa_sponsorship == 'true':
         jobs = jobs.filter(visa_sponsorship=True)

@@ -10,7 +10,7 @@ from .forms import JobPostingForm, JobApplicationForm
 
 def job_list(request):
     """List all active job postings with filtering"""
-    jobs = JobPosting.objects.filter(is_active=True).select_related('posted_by', 'category')
+    jobs = JobPosting.objects.filter(is_active=True).select_related('posted_by', 'category').prefetch_related('required_skills')
     
     # Filtering
     search = request.GET.get('search', '')
@@ -18,6 +18,7 @@ def job_list(request):
     location = request.GET.get('location', '')
     employment_type = request.GET.get('employment_type', '')
     experience_level = request.GET.get('experience_level', '')
+    skills = request.GET.get('skills', '')
     
     if search:
         jobs = jobs.filter(
@@ -38,6 +39,12 @@ def job_list(request):
     if experience_level:
         jobs = jobs.filter(experience_level=experience_level)
     
+    if skills:
+        # Filter jobs that have any of the specified skills
+        skills_list = [skill.strip() for skill in skills.split(',') if skill.strip()]
+        if skills_list:
+            jobs = jobs.filter(required_skills__name__in=skills_list).distinct()
+    
     # Pagination
     paginator = Paginator(jobs, 10)
     page_number = request.GET.get('page')
@@ -48,16 +55,21 @@ def job_list(request):
     employment_types = JobPosting.EMPLOYMENT_TYPES
     experience_levels = JobPosting.EXPERIENCE_LEVELS
     
+    # Get all unique skills for the skills filter dropdown
+    all_skills = JobSkill.objects.values_list('name', flat=True).distinct().order_by('name')
+    
     context = {
         'jobs': jobs,
         'categories': categories,
         'employment_types': employment_types,
         'experience_levels': experience_levels,
+        'all_skills': all_skills,
         'search': search,
         'selected_category': category,
         'selected_location': location,
         'selected_employment_type': employment_type,
         'selected_experience_level': experience_level,
+        'selected_skills': skills,
     }
     
     return render(request, 'jobs/job_list.html', context)

@@ -307,8 +307,50 @@ def custom_logout(request):
 # Job-related views
 @login_required
 def job_list(request):
-    """Display all active job postings"""
-    jobs = JobPosting.objects.filter(is_active=True).select_related('posted_by').order_by('-posted_at')
+    """Display all active job postings with filtering"""
+    from jobs.models import JobPosting, JobCategory, JobSkill
+    from django.db.models import Q
+    from django.core.paginator import Paginator
+    
+    jobs = JobPosting.objects.filter(is_active=True).select_related('posted_by', 'category').prefetch_related('required_skills').order_by('-posted_at')
+    
+    # Filtering
+    search = request.GET.get('search', '')
+    category = request.GET.get('category', '')
+    location = request.GET.get('location', '')
+    employment_type = request.GET.get('employment_type', '')
+    experience_level = request.GET.get('experience_level', '')
+    skills = request.GET.get('skills', '')
+    
+    if search:
+        jobs = jobs.filter(
+            Q(title__icontains=search) | 
+            Q(company__icontains=search) | 
+            Q(description__icontains=search)
+        )
+    
+    if category:
+        jobs = jobs.filter(category__name__icontains=category)
+    
+    if location:
+        jobs = jobs.filter(location__icontains=location)
+    
+    if employment_type:
+        jobs = jobs.filter(employment_type=employment_type)
+    
+    if experience_level:
+        jobs = jobs.filter(experience_level=experience_level)
+    
+    if skills:
+        # Filter jobs that have any of the specified skills
+        skills_list = [skill.strip() for skill in skills.split(',') if skill.strip()]
+        if skills_list:
+            jobs = jobs.filter(required_skills__name__in=skills_list).distinct()
+    
+    # Pagination
+    paginator = Paginator(jobs, 10)  # 10 jobs per page (5 rows of 2 jobs each)
+    page_number = request.GET.get('page')
+    jobs = paginator.get_page(page_number)
     
     # Add application status for current user
     if request.user.user_type == 'job_seeker':
@@ -319,9 +361,23 @@ def job_list(request):
         for job in jobs:
             job.has_applied = job.id in applied_job_ids
     
+    # Get filter options
+    categories = JobCategory.objects.all()
+    employment_types = JobPosting.EMPLOYMENT_TYPES
+    experience_levels = JobPosting.EXPERIENCE_LEVELS
+    
     context = {
         'jobs': jobs,
-        'user_type': request.user.user_type
+        'user_type': request.user.user_type,
+        'categories': categories,
+        'employment_types': employment_types,
+        'experience_levels': experience_levels,
+        'search': search,
+        'selected_category': category,
+        'selected_location': location,
+        'selected_employment_type': employment_type,
+        'selected_experience_level': experience_level,
+        'selected_skills': skills,
     }
     return render(request, 'profiles/job_list.html', context)
 

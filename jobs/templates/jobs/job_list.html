@@ -59,6 +59,14 @@
                             </select>
                         </div>
                         
+                        <div class="mb-3">
+                            <label for="skills" class="form-label">Skills</label>
+                            <input type="text" class="form-control" id="skills" name="skills" 
+                                   value="{{ selected_skills }}" 
+                                   placeholder="Enter skills separated by commas (e.g., Python, JavaScript, React)">
+                            <small class="form-text text-muted">Separate multiple skills with commas</small>
+                        </div>
+                        
                         <button type="submit" class="btn btn-primary">Filter Jobs</button>
                         <a href="{% url 'jobs:job_list' %}" class="btn btn-secondary">Clear</a>
                     </form>
@@ -97,6 +105,16 @@
                                         </span>
                                     </p>
                                     <p class="card-text">{{ job.description|truncatewords:30 }}</p>
+                                    
+                                    <!-- Required Skills -->
+                                    {% if job.required_skills.all %}
+                                        <div class="mt-2">
+                                            <strong>Required Skills:</strong>
+                                            {% for skill in job.required_skills.all %}
+                                                <span class="badge bg-secondary me-1">{{ skill.name }}</span>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
                                 </div>
                                 <div class="col-md-4 text-end">
                                     <div class="mb-2">
@@ -129,7 +147,7 @@
                         <ul class="pagination justify-content-center">
                             {% if jobs.has_previous %}
                                 <li class="page-item">
-                                    <a class="page-link" href="?page={{ jobs.previous_page_number }}">Previous</a>
+                                    <a class="page-link" href="?{% if search %}search={{ search }}&{% endif %}{% if selected_category %}category={{ selected_category }}&{% endif %}{% if selected_location %}location={{ selected_location }}&{% endif %}{% if selected_employment_type %}employment_type={{ selected_employment_type }}&{% endif %}{% if selected_experience_level %}experience_level={{ selected_experience_level }}&{% endif %}{% if selected_skills %}skills={{ selected_skills }}&{% endif %}page={{ jobs.previous_page_number }}">Previous</a>
                                 </li>
                             {% endif %}
                             
@@ -140,14 +158,14 @@
                                     </li>
                                 {% elif num > jobs.number|add:'-3' and num < jobs.number|add:'3' %}
                                     <li class="page-item">
-                                        <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                                        <a class="page-link" href="?{% if search %}search={{ search }}&{% endif %}{% if selected_category %}category={{ selected_category }}&{% endif %}{% if selected_location %}location={{ selected_location }}&{% endif %}{% if selected_employment_type %}employment_type={{ selected_employment_type }}&{% endif %}{% if selected_experience_level %}experience_level={{ selected_experience_level }}&{% endif %}{% if selected_skills %}skills={{ selected_skills }}&{% endif %}page={{ num }}">{{ num }}</a>
                                     </li>
                                 {% endif %}
                             {% endfor %}
                             
                             {% if jobs.has_next %}
                                 <li class="page-item">
-                                    <a class="page-link" href="?page={{ jobs.next_page_number }}">Next</a>
+                                    <a class="page-link" href="?{% if search %}search={{ search }}&{% endif %}{% if selected_category %}category={{ selected_category }}&{% endif %}{% if selected_location %}location={{ selected_location }}&{% endif %}{% if selected_employment_type %}employment_type={{ selected_employment_type }}&{% endif %}{% if selected_experience_level %}experience_level={{ selected_experience_level }}&{% endif %}{% if selected_skills %}skills={{ selected_skills }}&{% endif %}page={{ jobs.next_page_number }}">Next</a>
                                 </li>
                             {% endif %}
                         </ul>

@@ -78,6 +78,9 @@ class JobPosting(models.Model):
     application_count = models.PositiveIntegerField(default=0)
     view_count = models.PositiveIntegerField(default=0)
     
+    # Additional job features
+    visa_sponsorship = models.BooleanField(default=False, help_text="Does this job offer visa sponsorship?")
+    
     class Meta:
         ordering = ['-posted_at']
         indexes = [

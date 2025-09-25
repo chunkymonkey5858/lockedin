@@ -316,11 +316,16 @@ def job_list(request):
     
     # Filtering
     search = request.GET.get('search', '')
+    title = request.GET.get('title', '')
     category = request.GET.get('category', '')
     location = request.GET.get('location', '')
     employment_type = request.GET.get('employment_type', '')
     experience_level = request.GET.get('experience_level', '')
     skills = request.GET.get('skills', '')
+    work_location = request.GET.get('work_location', '')
+    salary_min = request.GET.get('salary_min', '')
+    salary_max = request.GET.get('salary_max', '')
+    visa_sponsorship = request.GET.get('visa_sponsorship', '')
     
     if search:
         jobs = jobs.filter(
@@ -328,6 +333,9 @@ def job_list(request):
             Q(company__icontains=search) | 
             Q(description__icontains=search)
         )
+    
+    if title:
+        jobs = jobs.filter(title__icontains=title)
     
     if category:
         jobs = jobs.filter(category__name__icontains=category)
@@ -347,6 +355,28 @@ def job_list(request):
         if skills_list:
             jobs = jobs.filter(required_skills__name__in=skills_list).distinct()
     
+    if work_location:
+        jobs = jobs.filter(work_location=work_location)
+    
+    if salary_min:
+        try:
+            salary_min_value = float(salary_min)
+            jobs = jobs.filter(salary_max__gte=salary_min_value)
+        except ValueError:
+            pass
+    
+    if salary_max:
+        try:
+            salary_max_value = float(salary_max)
+            jobs = jobs.filter(salary_min__lte=salary_max_value)
+        except ValueError:
+            pass
+    
+    if visa_sponsorship == 'true':
+        jobs = jobs.filter(visa_sponsorship=True)
+    elif visa_sponsorship == 'false':
+        jobs = jobs.filter(visa_sponsorship=False)
+    
     # Pagination
     paginator = Paginator(jobs, 10)  # 10 jobs per page (5 rows of 2 jobs each)
     page_number = request.GET.get('page')
@@ -365,6 +395,7 @@ def job_list(request):
     categories = JobCategory.objects.all()
     employment_types = JobPosting.EMPLOYMENT_TYPES
     experience_levels = JobPosting.EXPERIENCE_LEVELS
+    work_locations = JobPosting.WORK_LOCATIONS
     
     context = {
         'jobs': jobs,
@@ -372,12 +403,18 @@ def job_list(request):
         'categories': categories,
         'employment_types': employment_types,
         'experience_levels': experience_levels,
+        'work_locations': work_locations,
         'search': search,
+        'selected_title': title,
         'selected_category': category,
         'selected_location': location,
         'selected_employment_type': employment_type,
         'selected_experience_level': experience_level,
         'selected_skills': skills,
+        'selected_work_location': work_location,
+        'selected_salary_min': salary_min,
+        'selected_salary_max': salary_max,
+        'selected_visa_sponsorship': visa_sponsorship,
     }
     return render(request, 'profiles/job_list.html', context)
 

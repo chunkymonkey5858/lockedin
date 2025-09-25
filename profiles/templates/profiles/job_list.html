@@ -19,12 +19,66 @@
                 <div class="collapse d-lg-block" id="filterCollapse">
                 <div class="card-body">
                     <form method="get">
+                        <!-- Job Title Filter -->
                         <div class="mb-3">
-                            <label for="search" class="form-label">Search</label>
-                            <input type="text" class="form-control" id="search" name="search" 
-                                   value="{{ search }}" placeholder="Job title, company...">
+                            <label for="title" class="form-label">Job Title</label>
+                            <input type="text" class="form-control" id="title" name="title" 
+                                   value="{{ selected_title }}" placeholder="Software Engineer, Data Scientist...">
                         </div>
                         
+                        <!-- General Search -->
+                        <div class="mb-3">
+                            <label for="search" class="form-label">General Search</label>
+                            <input type="text" class="form-control" id="search" name="search" 
+                                   value="{{ search }}" placeholder="Company, description...">
+                        </div>
+                        
+                        <!-- Skills Filter -->
+                        <div class="mb-3">
+                            <label for="skills" class="form-label">Skills</label>
+                            <input type="text" class="form-control" id="skills" name="skills" 
+                                   value="{{ selected_skills }}" 
+                                   placeholder="Python, JavaScript, React...">
+                            <small class="form-text text-muted">Separate multiple skills with commas</small>
+                        </div>
+                        
+                        <!-- Location Filter -->
+                        <div class="mb-3">
+                            <label for="location" class="form-label">Location</label>
+                            <input type="text" class="form-control" id="location" name="location" 
+                                   value="{{ selected_location }}" placeholder="City, State...">
+                        </div>
+                        
+                        <!-- Work Location Type -->
+                        <div class="mb-3">
+                            <label for="work_location" class="form-label">Work Location</label>
+                            <select class="form-select" id="work_location" name="work_location">
+                                <option value="">All Locations</option>
+                                {% for value, label in work_locations %}
+                                    <option value="{{ value }}" {% if selected_work_location == value %}selected{% endif %}>
+                                        {{ label }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <!-- Salary Range -->
+                        <div class="mb-3">
+                            <label class="form-label">Salary Range</label>
+                            <div class="row">
+                                <div class="col-6">
+                                    <input type="number" class="form-control" id="salary_min" name="salary_min" 
+                                           value="{{ selected_salary_min }}" placeholder="Min" min="0">
+                                </div>
+                                <div class="col-6">
+                                    <input type="number" class="form-control" id="salary_max" name="salary_max" 
+                                           value="{{ selected_salary_max }}" placeholder="Max" min="0">
+                                </div>
+                            </div>
+                            <small class="form-text text-muted">Enter salary in thousands (e.g., 50 = $50,000)</small>
+                        </div>
+                        
+                        <!-- Category Filter -->
                         <div class="mb-3">
                             <label for="category" class="form-label">Category</label>
                             <select class="form-select" id="category" name="category">
@@ -37,12 +91,7 @@
                             </select>
                         </div>
                         
-                        <div class="mb-3">
-                            <label for="location" class="form-label">Location</label>
-                            <input type="text" class="form-control" id="location" name="location" 
-                                   value="{{ selected_location }}" placeholder="City, State...">
-                        </div>
-                        
+                        <!-- Employment Type -->
                         <div class="mb-3">
                             <label for="employment_type" class="form-label">Employment Type</label>
                             <select class="form-select" id="employment_type" name="employment_type">
@@ -55,6 +104,7 @@
                             </select>
                         </div>
                         
+                        <!-- Experience Level -->
                         <div class="mb-3">
                             <label for="experience_level" class="form-label">Experience Level</label>
                             <select class="form-select" id="experience_level" name="experience_level">
@@ -67,12 +117,14 @@
                             </select>
                         </div>
                         
+                        <!-- Visa Sponsorship -->
                         <div class="mb-3">
-                            <label for="skills" class="form-label">Skills</label>
-                            <input type="text" class="form-control" id="skills" name="skills" 
-                                   value="{{ selected_skills }}" 
-                                   placeholder="Python, JavaScript, React...">
-                            <small class="form-text text-muted">Separate multiple skills with commas</small>
+                            <label for="visa_sponsorship" class="form-label">Visa Sponsorship</label>
+                            <select class="form-select" id="visa_sponsorship" name="visa_sponsorship">
+                                <option value="">All Jobs</option>
+                                <option value="true" {% if selected_visa_sponsorship == 'true' %}selected{% endif %}>Offers Visa Sponsorship</option>
+                                <option value="false" {% if selected_visa_sponsorship == 'false' %}selected{% endif %}>No Visa Sponsorship</option>
+                            </select>
                         </div>
                         
                         <div class="d-grid gap-2">
@@ -123,12 +175,20 @@
                                             </p>
                                             <p class="text-muted small mb-0">
                                                 <i class="fas fa-map-marker-alt me-1"></i>{{ job.location }}
-                                                <span class="ms-3">
-                                                    <i class="fas fa-briefcase me-1"></i>{{ job.get_employment_type_display }}
+                                                <span class="ms-2">
+                                                    <i class="fas fa-home me-1"></i>{{ job.get_work_location_display }}
                                                 </span>
-                                                <span class="ms-3">
+                                            </p>
+                                            <p class="text-muted small mb-0">
+                                                <i class="fas fa-briefcase me-1"></i>{{ job.get_employment_type_display }}
+                                                <span class="ms-2">
                                                     <i class="fas fa-chart-line me-1"></i>{{ job.get_experience_level_display }}
                                                 </span>
+                                                {% if job.visa_sponsorship %}
+                                                    <span class="ms-2">
+                                                        <i class="fas fa-passport me-1"></i>Visa Sponsorship
+                                                    </span>
+                                                {% endif %}
                                             </p>
                                         </div>
                                         {% if user.user_type == 'job_seeker' %}
@@ -200,7 +260,7 @@
                         <ul class="pagination justify-content-center">
                             {% if jobs.has_previous %}
                                 <li class="page-item">
-                                    <a class="page-link" href="?{% if search %}search={{ search }}&{% endif %}{% if selected_category %}category={{ selected_category }}&{% endif %}{% if selected_location %}location={{ selected_location }}&{% endif %}{% if selected_employment_type %}employment_type={{ selected_employment_type }}&{% endif %}{% if selected_experience_level %}experience_level={{ selected_experience_level }}&{% endif %}{% if selected_skills %}skills={{ selected_skills }}&{% endif %}page={{ jobs.previous_page_number }}">Previous</a>
+                                    <a class="page-link" href="?{% if search %}search={{ search }}&{% endif %}{% if selected_title %}title={{ selected_title }}&{% endif %}{% if selected_category %}category={{ selected_category }}&{% endif %}{% if selected_location %}location={{ selected_location }}&{% endif %}{% if selected_employment_type %}employment_type={{ selected_employment_type }}&{% endif %}{% if selected_experience_level %}experience_level={{ selected_experience_level }}&{% endif %}{% if selected_skills %}skills={{ selected_skills }}&{% endif %}{% if selected_work_location %}work_location={{ selected_work_location }}&{% endif %}{% if selected_salary_min %}salary_min={{ selected_salary_min }}&{% endif %}{% if selected_salary_max %}salary_max={{ selected_salary_max }}&{% endif %}{% if selected_visa_sponsorship %}visa_sponsorship={{ selected_visa_sponsorship }}&{% endif %}page={{ jobs.previous_page_number }}">Previous</a>
                                 </li>
                             {% endif %}
                             
@@ -211,14 +271,14 @@
                                     </li>
                                 {% elif num > jobs.number|add:'-3' and num < jobs.number|add:'3' %}
                                     <li class="page-item">
-                                        <a class="page-link" href="?{% if search %}search={{ search }}&{% endif %}{% if selected_category %}category={{ selected_category }}&{% endif %}{% if selected_location %}location={{ selected_location }}&{% endif %}{% if selected_employment_type %}employment_type={{ selected_employment_type }}&{% endif %}{% if selected_experience_level %}experience_level={{ selected_experience_level }}&{% endif %}{% if selected_skills %}skills={{ selected_skills }}&{% endif %}page={{ num }}">{{ num }}</a>
+                                        <a class="page-link" href="?{% if search %}search={{ search }}&{% endif %}{% if selected_title %}title={{ selected_title }}&{% endif %}{% if selected_category %}category={{ selected_category }}&{% endif %}{% if selected_location %}location={{ selected_location }}&{% endif %}{% if selected_employment_type %}employment_type={{ selected_employment_type }}&{% endif %}{% if selected_experience_level %}experience_level={{ selected_experience_level }}&{% endif %}{% if selected_skills %}skills={{ selected_skills }}&{% endif %}{% if selected_work_location %}work_location={{ selected_work_location }}&{% endif %}{% if selected_salary_min %}salary_min={{ selected_salary_min }}&{% endif %}{% if selected_salary_max %}salary_max={{ selected_salary_max }}&{% endif %}{% if selected_visa_sponsorship %}visa_sponsorship={{ selected_visa_sponsorship }}&{% endif %}page={{ num }}">{{ num }}</a>
                                     </li>
                                 {% endif %}
                             {% endfor %}
                             
                             {% if jobs.has_next %}
                                 <li class="page-item">
-                                    <a class="page-link" href="?{% if search %}search={{ search }}&{% endif %}{% if selected_category %}category={{ selected_category }}&{% endif %}{% if selected_location %}location={{ selected_location }}&{% endif %}{% if selected_employment_type %}employment_type={{ selected_employment_type }}&{% endif %}{% if selected_experience_level %}experience_level={{ selected_experience_level }}&{% endif %}{% if selected_skills %}skills={{ selected_skills }}&{% endif %}page={{ jobs.next_page_number }}">Next</a>
+                                    <a class="page-link" href="?{% if search %}search={{ search }}&{% endif %}{% if selected_title %}title={{ selected_title }}&{% endif %}{% if selected_category %}category={{ selected_category }}&{% endif %}{% if selected_location %}location={{ selected_location }}&{% endif %}{% if selected_employment_type %}employment_type={{ selected_employment_type }}&{% endif %}{% if selected_experience_level %}experience_level={{ selected_experience_level }}&{% endif %}{% if selected_skills %}skills={{ selected_skills }}&{% endif %}{% if selected_work_location %}work_location={{ selected_work_location }}&{% endif %}{% if selected_salary_min %}salary_min={{ selected_salary_min }}&{% endif %}{% if selected_salary_max %}salary_max={{ selected_salary_max }}&{% endif %}{% if selected_visa_sponsorship %}visa_sponsorship={{ selected_visa_sponsorship }}&{% endif %}page={{ jobs.next_page_number }}">Next</a>
                                 </li>
                             {% endif %}
                         </ul>
@@ -321,3 +381,4 @@
 }
 </style>
 {% endblock %}
+

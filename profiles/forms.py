@@ -289,3 +289,43 @@ class UserDeleteForm(forms.Form):
             'placeholder': 'Reason for permanent deletion (required)...'
         })
     )
+
+class PrivacySettingsForm(forms.ModelForm):
+    """Form for managing privacy settings"""
+
+    class Meta:
+        from .models import PrivacySettings
+        model = PrivacySettings
+        fields = [
+            'privacy_level',
+            'show_full_name', 'show_profile_photo', 'show_email', 'show_phone', 'location_visibility',
+            'show_current_employer', 'work_history_visibility', 'show_education', 'show_skills', 'show_resume',
+            'searchable_by_recruiters', 'allow_recruiter_messages', 'show_salary_expectations',
+            'blocked_companies', 'anonymous_mode', 'notify_on_profile_view'
+        ]
+        widgets = {
+            'privacy_level': forms.Select(attrs={
+                'class': 'form-select',
+                'id': 'privacyLevelSelect'
+            }),
+            'show_full_name': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'show_profile_photo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'show_email': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'show_phone': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'location_visibility': forms.Select(attrs={'class': 'form-select'}),
+            'show_current_employer': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'work_history_visibility': forms.Select(attrs={'class': 'form-select'}),
+            'show_education': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'show_skills': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'show_resume': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'searchable_by_recruiters': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'allow_recruiter_messages': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'show_salary_expectations': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'blocked_companies': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'Enter company names separated by commas (e.g., Company A, Company B, Company C)'
+            }),
+            'anonymous_mode': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'notify_on_profile_view': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }

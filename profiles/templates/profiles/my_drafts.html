@@ -1,0 +1,220 @@
+{% extends 'base.html' %}
+
+{% block title %}My Drafts - LockedIn{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-file-alt me-2"></i>My Drafts</h2>
+        <a href="{% url 'post_job' %}" class="btn btn-primary">
+            <i class="fas fa-plus me-1"></i>Create New Job
+        </a>
+    </div>
+
+    <!-- Search and Filter Section -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" id="filterForm">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Search</label>
+                        <input type="text" name="search" class="form-control" placeholder="Search by title, company..." value="{{ search_query }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Category/Department</label>
+                        <select name="category" class="form-select">
+                            <option value="">All Categories</option>
+                            {% for cat in categories %}
+                                <option value="{{ cat.id }}" {% if category_filter == cat.id|stringformat:"s" %}selected{% endif %}>{{ cat.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Location</label>
+                        <input type="text" name="location" class="form-control" placeholder="Filter by location" value="{{ location_filter }}">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Sort By</label>
+                        <select name="sort" class="form-select">
+                            <option value="updated" {% if sort_by == 'updated' %}selected{% endif %}>Last Modified</option>
+                            <option value="created" {% if sort_by == 'created' %}selected{% endif %}>Date Created</option>
+                            <option value="title" {% if sort_by == 'title' %}selected{% endif %}>Title</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <button type="submit" class="btn btn-primary btn-sm">
+                        <i class="fas fa-filter me-1"></i>Apply Filters
+                    </button>
+                    <a href="{% url 'my_drafts' %}" class="btn btn-outline-secondary btn-sm">
+                        <i class="fas fa-times me-1"></i>Clear
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Drafts List -->
+    {% if drafts %}
+        <div class="row">
+            {% for draft in drafts %}
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="card h-100 shadow-sm hover-shadow">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h5 class="card-title">
+                                    <a href="{% url 'jobs:edit_job' draft.id %}" class="text-decoration-none text-dark">
+                                        {{ draft.title|default:"Untitled Draft" }}
+                                    </a>
+                                </h5>
+                                <span class="badge bg-warning text-dark">
+                                    <i class="fas fa-file-alt me-1"></i>Draft
+                                </span>
+                            </div>
+
+                            <h6 class="card-subtitle mb-2 text-muted">
+                                {{ draft.company|default:"Company not set" }}
+                            </h6>
+
+                            <p class="card-text small">
+                                <i class="fas fa-map-marker-alt text-muted me-1"></i>
+                                {{ draft.location|default:"Location not set" }}
+                            </p>
+
+                            {% if draft.category %}
+                                <p class="card-text small">
+                                    <i class="fas fa-folder text-muted me-1"></i>
+                                    {{ draft.category.name }}
+                                </p>
+                            {% endif %}
+
+                            {% if draft.description %}
+                                <p class="card-text text-muted small">
+                                    {{ draft.description|truncatewords:15 }}
+                                </p>
+                            {% else %}
+                                <p class="card-text text-muted small fst-italic">
+                                    No description added yet
+                                </p>
+                            {% endif %}
+
+                            <!-- Date Info -->
+                            <div class="border-top pt-3 mt-3">
+                                <small class="text-muted d-block">
+                                    <i class="fas fa-clock me-1"></i>
+                                    Last modified: {{ draft.updated_at|timesince }} ago
+                                </small>
+                                <small class="text-muted d-block">
+                                    <i class="fas fa-calendar me-1"></i>
+                                    Created: {{ draft.posted_at|date:"M d, Y" }}
+                                </small>
+                            </div>
+
+                            <!-- Action Buttons -->
+                            <div class="d-flex gap-2 mt-3">
+                                <a href="{% url 'jobs:edit_job' draft.id %}" class="btn btn-sm btn-primary flex-fill" title="Edit Draft">
+                                    <i class="fas fa-edit me-1"></i>Edit
+                                </a>
+                                <button type="button" class="btn btn-sm btn-success flex-fill"
+                                        onclick="confirmPublish({{ draft.id }}, '{{ draft.title|default:"this job"|escapejs }}')"
+                                        title="Publish Job">
+                                    <i class="fas fa-rocket me-1"></i>Publish
+                                </button>
+                                <a href="{% url 'jobs:delete_job' draft.id %}" class="btn btn-sm btn-outline-danger" title="Delete Draft">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        <!-- Results count -->
+        <div class="mt-3">
+            <p class="text-muted">
+                Showing {{ drafts|length }} draft{{ drafts|length|pluralize }}
+            </p>
+        </div>
+    {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-file-alt fa-4x text-muted mb-3"></i>
+            <h4>No Drafts Found</h4>
+            {% if search_query or location_filter or category_filter %}
+                <p class="text-muted">Try adjusting your filters or search terms.</p>
+                <a href="{% url 'my_drafts' %}" class="btn btn-outline-primary">
+                    <i class="fas fa-times me-1"></i>Clear Filters
+                </a>
+            {% else %}
+                <p class="text-muted">You don't have any draft job postings yet.</p>
+                <a href="{% url 'post_job' %}" class="btn btn-primary">
+                    <i class="fas fa-plus me-1"></i>Create Your First Draft
+                </a>
+            {% endif %}
+        </div>
+    {% endif %}
+</div>
+
+<!-- Publish Confirmation Modal -->
+<div class="modal fade" id="publishModal" tabindex="-1" aria-labelledby="publishModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title" id="publishModalLabel">
+                    <i class="fas fa-rocket me-2"></i>Publish Job Posting
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to publish "<strong id="jobTitleToPublish"></strong>"?</p>
+                <p class="text-muted small">Once published, this job will be visible to all job seekers on the platform.</p>
+                <div id="publishValidationErrors" class="alert alert-danger d-none"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>Cancel
+                </button>
+                <form id="publishForm" method="post" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-rocket me-1"></i>Confirm & Publish
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.hover-shadow {
+    transition: all 0.3s ease;
+}
+
+.hover-shadow:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.15) !important;
+}
+
+.card-title a:hover {
+    color: #0d6efd !important;
+}
+</style>
+
+<script>
+function confirmPublish(jobId, jobTitle) {
+    document.getElementById('jobTitleToPublish').textContent = jobTitle;
+    document.getElementById('publishForm').action = "{% url 'publish_job' 0 %}".replace('0', jobId);
+    document.getElementById('publishValidationErrors').classList.add('d-none');
+
+    const modal = new bootstrap.Modal(document.getElementById('publishModal'));
+    modal.show();
+}
+
+// Auto-submit form when filters change (optional UX enhancement)
+document.querySelectorAll('select[name="sort"]').forEach(select => {
+    select.addEventListener('change', function() {
+        document.getElementById('filterForm').submit();
+    });
+});
+</script>
+{% endblock %}

@@ -19,9 +19,7 @@
                             </h5>
                             <h6 class="card-subtitle mb-2 text-muted">{{ application.job.company }}</h6>
                             <p class="card-text">
-                                <span class="badge bg-{{ application.status|yesno:'success,warning,danger' }}">
-                                    {{ application.get_status_display }}
-                                </span>
+                                <span class="badge bg-secondary">{{ application.get_status_display }}</span>
                             </p>
                             <p class="card-text">
                                 <small class="text-muted">Applied {{ application.applied_at|timesince }} ago</small>

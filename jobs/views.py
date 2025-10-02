@@ -10,7 +10,7 @@ from .forms import JobPostingForm, JobApplicationForm
 
 def job_list(request):
     """List all active job postings with filtering"""
-    jobs = JobPosting.objects.filter(is_active=True).select_related('posted_by', 'category').prefetch_related('required_skills')
+    jobs = JobPosting.objects.filter(is_active=True, status='published').select_related('posted_by', 'category').prefetch_related('required_skills')
     
     # Filtering
     search = request.GET.get('search', '')
@@ -76,7 +76,7 @@ def job_list(request):
 
 def job_detail(request, job_id):
     """View job posting details"""
-    job = get_object_or_404(JobPosting, id=job_id, is_active=True)
+    job = get_object_or_404(JobPosting, id=job_id, is_active=True, status='published')
     
     # Increment view count
     job.view_count += 1
@@ -104,7 +104,7 @@ def job_detail(request, job_id):
 @login_required
 def apply_to_job(request, job_id):
     """Apply to a job posting"""
-    job = get_object_or_404(JobPosting, id=job_id, is_active=True)
+    job = get_object_or_404(JobPosting, id=job_id, is_active=True, status='published')
     
     # Check if user already applied
     if JobApplication.objects.filter(job=job, applicant=request.user).exists():
@@ -170,6 +170,14 @@ def post_job(request):
             try:
                 job = form.save(commit=False)
                 job.posted_by = request.user
+                # Determine save action (draft vs publish)
+                save_action = form.cleaned_data.get('save_action') or request.POST.get('save_action')
+                if save_action == 'save_draft':
+                    job.status = 'draft'
+                    job.is_active = False
+                else:
+                    job.status = 'published'
+                    job.is_active = True
                 job.save()
                 
                 # Handle skills - parse comma-separated string
@@ -183,8 +191,12 @@ def post_job(request):
                             is_required=True
                         )
                 
-                messages.success(request, 'Job posted successfully!')
-                return redirect('jobs:job_detail', job_id=job.id)
+                if job.status == 'draft':
+                    messages.success(request, 'Draft saved. You can continue editing from My Jobs before publishing.')
+                    return redirect('jobs:my_jobs')
+                else:
+                    messages.success(request, 'Job posted successfully!')
+                    return redirect('jobs:job_detail', job_id=job.id)
             except Exception as e:
                 messages.error(request, f'Error creating job posting: {str(e)}')
         else:
@@ -222,21 +234,62 @@ def my_jobs(request):
 def edit_job(request, job_id):
     """Edit job posting"""
     job = get_object_or_404(JobPosting, id=job_id, posted_by=request.user)
-    
+
     if request.method == 'POST':
         form = JobPostingForm(request.POST, instance=job)
         if form.is_valid():
-            form.save()
-            messages.success(request, 'Job updated successfully!')
-            return redirect('job_detail', job_id=job_id)
+            try:
+                updated_job = form.save(commit=False)
+                # Determine save action (draft vs publish vs save & continue)
+                save_action = form.cleaned_data.get('save_action') or request.POST.get('save_action')
+                if save_action in ['save_draft', 'save_continue']:
+                    updated_job.status = 'draft'
+                    updated_job.is_active = False
+                else:
+                    updated_job.status = 'published'
+                    updated_job.is_active = True
+                updated_job.save()
+
+                # Handle skills - delete existing and add new ones
+                job.required_skills.all().delete()
+                skills_input = request.POST.get('skills', '')
+                if skills_input.strip():
+                    skills_list = [skill.strip() for skill in skills_input.split(',') if skill.strip()]
+                    for skill_name in skills_list:
+                        JobSkill.objects.create(
+                            job=job,
+                            name=skill_name,
+                            is_required=True
+                        )
+
+                if save_action == 'save_continue':
+                    messages.success(request, 'Changes saved! You can continue editing.')
+                    return redirect('jobs:edit_job', job_id=job_id)
+                elif updated_job.status == 'draft':
+                    messages.success(request, 'Draft saved successfully!')
+                    return redirect('jobs:my_jobs')
+                else:
+                    messages.success(request, 'Job updated successfully!')
+                    return redirect('jobs:job_detail', job_id=job_id)
+            except Exception as e:
+                messages.error(request, f'Error updating job posting: {str(e)}')
+        else:
+            # Debug form errors
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f'{field}: {error}')
     else:
         form = JobPostingForm(instance=job)
-    
+
+    # Get existing skills as comma-separated string
+    existing_skills = ', '.join([skill.name for skill in job.required_skills.all()])
+
     context = {
         'job': job,
         'form': form,
+        'existing_skills': existing_skills,
     }
-    
+
     return render(request, 'jobs/edit_job.html', context)
 
 @login_required
@@ -262,7 +315,7 @@ def job_applications(request, job_id):
     
     applications = JobApplication.objects.filter(
         job=job
-    ).select_related('applicant').order_by('-applied_at')
+    ).select_related('applicant').prefetch_related('status_history').order_by('-applied_at')
     
     context = {
         'job': job,
@@ -284,6 +337,8 @@ def update_application_status(request, application_id):
         
         new_status = request.POST.get('status')
         if new_status in [choice[0] for choice in JobApplication.APPLICATION_STATUS]:
+            # Attach user for signals to record who changed it
+            application._changed_by = request.user
             application.status = new_status
             application.save()
             

@@ -245,6 +245,7 @@
         
         <form method="post" id="jobPostForm">
             {% csrf_token %}
+            <input type="hidden" name="save_action" id="save_action" value="publish">
             
             <!-- Basic Information Section -->
             <div class="form-section">
@@ -457,17 +458,24 @@
                 <a href="{% url 'recruiters:dashboard' %}" class="btn-cancel">
                     <i class="fas fa-times"></i>Cancel
                 </a>
-                
-                <div class="progress-indicator">
+
+                <!-- Hide progress dots to keep controls compact -->
+                <div class="progress-indicator d-none">
                     <div class="progress-dot active"></div>
                     <div class="progress-dot active"></div>
                     <div class="progress-dot active"></div>
                     <div class="progress-dot active"></div>
                 </div>
-                
-                <button type="submit" class="btn-post">
-                    <i class="fas fa-rocket"></i>Post Job Opening
-                </button>
+
+                <!-- Right-aligned controls: Save Draft next to Post Job -->
+                <div class="d-flex align-items-center gap-2 ms-auto">
+                    <button type="button" class="btn btn-outline-secondary" id="saveDraftBtn">
+                        <i class="fas fa-save me-1"></i>Save as Draft
+                    </button>
+                    <button type="submit" class="btn-post" id="publishBtn">
+                        <i class="fas fa-rocket me-1"></i>Post Job
+                    </button>
+                </div>
             </div>
         </form>
     </div>
@@ -535,7 +543,9 @@ document.addEventListener('DOMContentLoaded', function() {
             isValid = false;
         }
         
-        if (!isValid) {
+        // If publishing, enforce validation; if saving draft, allow incomplete
+        const action = document.getElementById('save_action').value;
+        if (action !== 'save_draft' && !isValid) {
             e.preventDefault();
             // Scroll to first error
             const firstError = form.querySelector('input[style*="border-color: rgb(220, 38, 38)"], select[style*="border-color: rgb(220, 38, 38)"], textarea[style*="border-color: rgb(220, 38, 38)"]');
@@ -544,6 +554,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 firstError.focus();
             }
         }
+    });
+    
+    // Save Draft behavior
+    const saveDraftBtn = document.getElementById('saveDraftBtn');
+    saveDraftBtn.addEventListener('click', function() {
+        document.getElementById('save_action').value = 'save_draft';
+        // Bypass HTML5 required checks for draft
+        form.setAttribute('novalidate', 'novalidate');
+        form.submit();
+    });
+    const publishBtn = document.getElementById('publishBtn');
+    publishBtn.addEventListener('click', function() {
+        document.getElementById('save_action').value = 'publish';
     });
     
     function validateField(field) {

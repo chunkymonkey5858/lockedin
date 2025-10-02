@@ -42,7 +42,7 @@
             </div>
         </div>
 
-        <form method="post" enctype="multipart/form-data" id="comprehensive-profile-form">
+        <form method="post" enctype="multipart/form-data" id="comprehensive-profile-form" novalidate>
             {% csrf_token %}
             
             <!-- Step 1: Account Information -->
@@ -669,6 +669,24 @@ document.addEventListener('DOMContentLoaded', function() {
     if (defaultSelected) {
         updateFormForUserType(defaultSelected.value);
     }
+    // Immediate field validation without losing input
+    const form = document.getElementById('comprehensive-profile-form');
+    const inputs = form.querySelectorAll('input, select, textarea');
+    inputs.forEach(el => {
+        el.addEventListener('input', () => {
+            if (el.checkValidity()) {
+                el.classList.remove('is-invalid');
+                el.classList.add('is-valid');
+            } else {
+                el.classList.remove('is-valid');
+            }
+        });
+        el.addEventListener('blur', () => {
+            if (!el.checkValidity()) {
+                el.classList.add('is-invalid');
+            }
+        });
+    });
 });
 
 let currentStep = 1;
@@ -716,6 +734,18 @@ function updateStepIndicator() {
 }
 
 function nextStep() {
+    const form = document.getElementById('comprehensive-profile-form');
+    // Validate required fields in current step before advancing
+    const current = document.getElementById(`step-${currentStep}`);
+    const requiredFields = current.querySelectorAll('[required]');
+    let ok = true;
+    requiredFields.forEach(f => {
+        if (!f.checkValidity()) {
+            f.classList.add('is-invalid');
+            ok = false;
+        }
+    });
+    if (!ok) return;
     if (currentStep < totalSteps) {
         currentStep++;
         updateStepIndicator();

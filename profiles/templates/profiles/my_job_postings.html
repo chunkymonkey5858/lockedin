@@ -67,71 +67,23 @@
                                         <a href="{% url 'job_applications' job.id %}" class="btn btn-outline-primary btn-sm">
                                             <i class="fas fa-users me-1"></i>View Applications
                                         </a>
-                                        <div class="btn-group btn-group-sm">
-                                            <a href="{% url 'job_detail' job.id %}" class="btn btn-outline-secondary">
-                                                <i class="fas fa-eye"></i>
-                                            </a>
-                                            <button type="button" class="btn btn-outline-warning" 
-                                                    onclick="toggleJobStatus({{ job.id }}, {{ job.is_active|yesno:'false,true' }})">
-                                                <i class="fas fa-{% if job.is_active %}pause{% else %}play{% endif %}"></i>
-                                            </button>
+                                        <div class="d-flex gap-2">
+                                            {% if job.status == 'draft' %}
+                                                <button type="button" class="btn btn-success btn-sm"
+                                                        onclick="confirmPublish({{ job.id }}, '{{ job.title|default:"this job"|escapejs }}')">
+                                                    <i class="fas fa-rocket me-1"></i>Publish
+                                                </button>
+                                            {% else %}
+                                                <a href="{% url 'unpublish_job' job.id %}" class="btn btn-outline-warning btn-sm">
+                                                    <i class="fas fa-pause me-1"></i>Move to Draft
+                                                </a>
+                                            {% endif %}
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     {% endfor %}
-                </div>
-                
-                <!-- Statistics Card -->
-                <div class="row mt-4">
-                    <div class="col-12">
-                        <div class="card">
-                            <div class="card-header">
-                                <h4 class="h5 mb-0">Job Posting Statistics</h4>
-                            </div>
-                            <div class="card-body">
-                                <div class="row text-center">
-                                    <div class="col-md-3">
-                                        <div class="stat-item">
-                                            <h3 class="text-primary">{{ jobs|length }}</h3>
-                                            <p class="text-muted mb-0">Total Jobs Posted</p>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <div class="stat-item">
-                                            <h3 class="text-success">
-                                                {% for job in jobs %}
-                                                    {% if job.is_active %}{{ forloop.counter0|add:1 }}{% endif %}
-                                                {% empty %}0{% endfor %}
-                                            </h3>
-                                            <p class="text-muted mb-0">Active Jobs</p>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <div class="stat-item">
-                                            <h3 class="text-info">
-                                                {% for job in jobs %}
-                                                    {{ job.application_count|add:0 }}
-                                                {% empty %}0{% endfor %}
-                                            </h3>
-                                            <p class="text-muted mb-0">Total Applications</p>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <div class="stat-item">
-                                            <h3 class="text-warning">
-                                                {% for job in jobs %}
-                                                    {% if job.application_count > 0 %}{{ forloop.counter0|add:1 }}{% endif %}
-                                                {% empty %}0{% endfor %}
-                                            </h3>
-                                            <p class="text-muted mb-0">Jobs with Applications</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             {% else %}
                 <div class="text-center py-5">
@@ -149,11 +101,48 @@
     </div>
 </div>
 
+<!-- Publish Confirmation Modal -->
+<div class="modal fade" id="publishModal" tabindex="-1" aria-labelledby="publishModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title" id="publishModalLabel">
+                    <i class="fas fa-rocket me-2"></i>Publish Job Posting
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to publish "<strong id="jobTitleToPublish"></strong>"?</p>
+                <p class="text-muted small">Once published, this job will be visible to all job seekers on the platform.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>Cancel
+                </button>
+                <form id="publishForm" method="post" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-rocket me-1"></i>Confirm & Publish
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
+function confirmPublish(jobId, jobTitle) {
+    document.getElementById('jobTitleToPublish').textContent = jobTitle;
+    document.getElementById('publishForm').action = "{% url 'publish_job' 0 %}".replace('0', jobId);
+
+    const modal = new bootstrap.Modal(document.getElementById('publishModal'));
+    modal.show();
+}
+
 function toggleJobStatus(jobId, currentStatus) {
     const newStatus = !currentStatus;
     const action = newStatus ? 'activate' : 'deactivate';
-    
+
     if (confirm(`Are you sure you want to ${action} this job posting?`)) {
         fetch(`/jobs/${jobId}/toggle-status/`, {
             method: 'POST',

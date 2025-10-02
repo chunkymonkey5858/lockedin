@@ -18,6 +18,10 @@ urlpatterns = [
     path('profile/<int:user_id>/', views.view_profile, name='view_public_profile'),
     path('profile/delete/', views.delete_profile, name='delete_profile'),
     path('profile/toggle-visibility/', views.toggle_profile_visibility, name='toggle_profile_visibility'),
+
+    # Privacy settings
+    path('privacy-settings/', views.privacy_settings, name='privacy_settings'),
+    path('profile/preview/', views.preview_profile, name='preview_profile'),
     
     # Public profile browsing
     path('profiles/', views.public_profile_list, name='profile_list'),
@@ -32,8 +36,11 @@ urlpatterns = [
     # Recruiter URLs
     path('post-job/', views.post_job, name='post_job'),
     path('my-jobs/', views.my_job_postings, name='my_job_postings'),
+    path('my-drafts/', views.my_drafts, name='my_drafts'),
     path('job-applications/<int:job_id>/', views.job_applications, name='job_applications'),
     path('update-application-status/<int:application_id>/', views.update_application_status, name='update_application_status'),
+    path('publish-job/<int:job_id>/', views.publish_job, name='publish_job'),
+    path('unpublish-job/<int:job_id>/', views.unpublish_job, name='unpublish_job'),
     
     # Admin URLs
     path('admin/dashboard/', views.admin_dashboard, name='admin_dashboard'),

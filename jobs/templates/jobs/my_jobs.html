@@ -19,13 +19,21 @@
                         <div class="card-body">
                             <div class="d-flex justify-content-between align-items-start mb-2">
                                 <h5 class="card-title">
-                                    <a href="{% url 'jobs:job_detail' job.id %}" class="text-decoration-none">
-                                        {{ job.title }}
-                                    </a>
+                                    {% if job.status == 'draft' %}
+                                        <a href="{% url 'jobs:edit_job' job.id %}" class="text-decoration-none">
+                                            {{ job.title|default:"Untitled Draft" }}
+                                        </a>
+                                    {% else %}
+                                        <a href="{% url 'jobs:job_detail' job.id %}" class="text-decoration-none">
+                                            {{ job.title }}
+                                        </a>
+                                    {% endif %}
                                 </h5>
                                 <div>
-                                    {% if job.is_active %}
-                                        <span class="badge bg-success">Active</span>
+                                    {% if job.status == 'draft' %}
+                                        <span class="badge bg-warning text-dark">Draft</span>
+                                    {% elif job.is_active %}
+                                        <span class="badge bg-success">Published</span>
                                     {% else %}
                                         <span class="badge bg-secondary">Inactive</span>
                                     {% endif %}
@@ -60,16 +68,22 @@
                             
                             <div class="d-flex justify-content-between align-items-center">
                                 <small class="text-muted">
-                                    Posted {{ job.posted_at|timesince }} ago
+                                    {% if job.status == 'draft' %}
+                                        Last modified {{ job.updated_at|timesince }} ago
+                                    {% else %}
+                                        Posted {{ job.posted_at|timesince }} ago
+                                    {% endif %}
                                 </small>
                                 <div class="btn-group" role="group">
-                                    <a href="{% url 'jobs:edit_job' job.id %}" class="btn btn-sm btn-outline-primary">
+                                    <a href="{% url 'jobs:edit_job' job.id %}" class="btn btn-sm btn-outline-primary" title="Edit">
                                         <i class="fas fa-edit"></i>
                                     </a>
-                                    <a href="{% url 'jobs:job_applications' job.id %}" class="btn btn-sm btn-outline-info">
-                                        <i class="fas fa-users"></i>
-                                    </a>
-                                    <a href="{% url 'jobs:delete_job' job.id %}" class="btn btn-sm btn-outline-danger">
+                                    {% if job.status != 'draft' %}
+                                        <a href="{% url 'jobs:job_applications' job.id %}" class="btn btn-sm btn-outline-info" title="View Applications">
+                                            <i class="fas fa-users"></i>
+                                        </a>
+                                    {% endif %}
+                                    <a href="{% url 'jobs:delete_job' job.id %}" class="btn btn-sm btn-outline-danger" title="Delete">
                                         <i class="fas fa-trash"></i>
                                     </a>
                                 </div>

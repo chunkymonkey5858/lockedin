@@ -40,15 +40,15 @@ class JobPosting(models.Model):
     ]
     
     # Basic job information
-    title = models.CharField(max_length=200)
-    company = models.CharField(max_length=200)
-    location = models.CharField(max_length=200)
+    title = models.CharField(max_length=200, blank=True)
+    company = models.CharField(max_length=200, blank=True)
+    location = models.CharField(max_length=200, blank=True)
     work_location = models.CharField(max_length=20, choices=WORK_LOCATIONS, default='on_site')
     employment_type = models.CharField(max_length=20, choices=EMPLOYMENT_TYPES, default='full_time')
     experience_level = models.CharField(max_length=20, choices=EXPERIENCE_LEVELS, default='mid')
     
     # Job details
-    description = models.TextField()
+    description = models.TextField(blank=True)
     requirements = models.TextField(blank=True)
     responsibilities = models.TextField(blank=True)
     benefits = models.TextField(blank=True)
@@ -64,10 +64,15 @@ class JobPosting(models.Model):
     ])
     
     # Relationships
-    category = models.ForeignKey(JobCategory, on_delete=models.CASCADE, related_name='jobs')
+    category = models.ForeignKey(JobCategory, on_delete=models.CASCADE, related_name='jobs', null=True, blank=True)
     posted_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='posted_jobs')
     
     # Status and dates
+    STATUS_CHOICES = [
+        ('draft', 'Draft'),
+        ('published', 'Published'),
+    ]
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='published')
     is_active = models.BooleanField(default=True)
     is_featured = models.BooleanField(default=False)
     application_deadline = models.DateField(null=True, blank=True)
@@ -123,12 +128,17 @@ class JobSkill(models.Model):
 
 class JobApplication(models.Model):
     APPLICATION_STATUS = [
+        ('applied', 'Applied'),
+        ('review', 'Under Review'),
+        ('interview', 'Interview'),
+        ('offer', 'Offer'),
+        ('closed', 'Closed'),
+    ]
+    
+    OUTCOME_CHOICES = [
         ('pending', 'Pending'),
-        ('reviewed', 'Under Review'),
-        ('shortlisted', 'Shortlisted'),
-        ('interviewed', 'Interviewed'),
+        ('accepted', 'Accepted Offer'),
         ('rejected', 'Rejected'),
-        ('hired', 'Hired'),
         ('withdrawn', 'Withdrawn'),
     ]
     
@@ -136,15 +146,17 @@ class JobApplication(models.Model):
     applicant = models.ForeignKey(User, on_delete=models.CASCADE, related_name='job_applications')
     cover_letter = models.TextField(blank=True)
     resume = models.FileField(upload_to='resumes/', blank=True, null=True)
-    status = models.CharField(max_length=20, choices=APPLICATION_STATUS, default='pending')
+    status = models.CharField(max_length=20, choices=APPLICATION_STATUS, default='applied')
     
     # Application tracking
     applied_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     reviewed_at = models.DateTimeField(null=True, blank=True)
+    interview_date = models.DateTimeField(null=True, blank=True, help_text="Scheduled interview date and time")
+    outcome = models.CharField(max_length=20, choices=OUTCOME_CHOICES, default='pending', help_text="Final outcome of the application")
     
     # Recruiter notes
-    recruiter_notes = models.TextField(blank=True)
+    recruiter_notes = models.TextField(blank=True, help_text="Internal notes from recruiter")
     
     class Meta:
         unique_together = ['job', 'applicant']
@@ -156,3 +168,23 @@ class JobApplication(models.Model):
     
     def __str__(self):
         return f"{self.applicant.get_full_name()} applied to {self.job.title}"
+
+
+class ApplicationStatusHistory(models.Model):
+    STATUS_CHOICES = [
+        ('applied', 'Applied'),
+        ('review', 'Under Review'),
+        ('interview', 'Interview'),
+        ('offer', 'Offer'),
+        ('closed', 'Closed'),
+    ]
+    
+    application = models.ForeignKey(JobApplication, on_delete=models.CASCADE, related_name='status_history')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES)
+    changed_at = models.DateTimeField(auto_now_add=True)
+    changed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    notes = models.TextField(blank=True)
+    
+    class Meta:
+        verbose_name_plural = "Application Status Histories"
+        ordering = ['-changed_at']

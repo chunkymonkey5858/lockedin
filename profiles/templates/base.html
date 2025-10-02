@@ -251,6 +251,9 @@
                             <a class="nav-link" href="{% url 'my_job_postings' %}">
                                 <i class="fas fa-list me-1"></i>My Jobs
                             </a>
+                            <a class="nav-link" href="{% url 'my_drafts' %}">
+                                <i class="fas fa-file-alt me-1"></i>My Drafts
+                            </a>
                         {% endif %}
                         <a class="nav-link" href="{% url 'view_profile' %}">
                             <i class="fas fa-user me-1"></i>My Profile
@@ -258,6 +261,11 @@
                         <a class="nav-link" href="{% url 'edit_profile' %}">
                             <i class="fas fa-edit me-1"></i>Edit Profile
                         </a>
+                        {% if user.user_type == 'job_seeker' %}
+                            <a class="nav-link" href="{% url 'privacy_settings' %}">
+                                <i class="fas fa-lock me-1"></i>Privacy Settings
+                            </a>
+                        {% endif %}
                         <a class="nav-link" href="{% url 'profile_list' %}">
                             <i class="fas fa-users me-1"></i>Browse Profiles
                         </a>

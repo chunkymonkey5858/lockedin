@@ -3,6 +3,8 @@ from django.core.exceptions import ValidationError
 from .models import JobPosting, JobApplication, JobCategory
 
 class JobPostingForm(forms.ModelForm):
+    save_action = forms.CharField(widget=forms.HiddenInput(), required=False)
+
     class Meta:
         model = JobPosting
         fields = [
@@ -69,7 +71,6 @@ class JobPostingForm(forms.ModelForm):
             }),
             'salary_currency': forms.TextInput(attrs={
                 'class': 'form-control',
-                'value': 'USD'
             }),
             'salary_period': forms.Select(attrs={'class': 'form-select'}),
             'application_deadline': forms.DateInput(attrs={
@@ -80,11 +81,20 @@ class JobPostingForm(forms.ModelForm):
     
     def clean(self):
         cleaned_data = super().clean()
+        save_action = self.data.get('save_action')
+        is_draft = save_action == 'save_draft'
         salary_min = cleaned_data.get('salary_min')
         salary_max = cleaned_data.get('salary_max')
         
         if salary_min and salary_max and salary_min > salary_max:
             raise ValidationError('Minimum salary cannot be greater than maximum salary.')
+        
+        # For draft saves, skip required field enforcement
+        if is_draft:
+            # For drafts, default currency to USD if missing
+            if not cleaned_data.get('salary_currency'):
+                cleaned_data['salary_currency'] = 'USD'
+            return cleaned_data
         
         # Validate salary values are reasonable
         if salary_min and salary_min < 0:

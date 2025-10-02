@@ -157,3 +157,134 @@ class AdminActionLog(models.Model):
     
     def __str__(self):
         return f"{self.admin_user.username} {self.get_action_type_display()} {self.target_user.username} on {self.created_at.strftime('%Y-%m-%d %H:%M')}"
+
+class PrivacySettings(models.Model):
+    """Privacy settings for job seeker profiles"""
+
+    LOCATION_VISIBILITY_CHOICES = [
+        ('full', 'Full Address'),
+        ('city', 'City Only'),
+        ('state', 'State Only'),
+        ('hidden', 'Hidden'),
+    ]
+
+    WORK_HISTORY_VISIBILITY_CHOICES = [
+        ('all', 'Show All'),
+        ('partial', 'Show Partial (Last 2 positions)'),
+        ('hidden', 'Hidden'),
+    ]
+
+    PRIVACY_LEVEL_CHOICES = [
+        ('public', 'Public - Everything visible'),
+        ('limited', 'Limited - Basic info only'),
+        ('private', 'Private - Minimal visibility'),
+        ('custom', 'Custom - Manual selection'),
+    ]
+
+    # One-to-one relationship with JobSeekerProfile
+    profile = models.OneToOneField(JobSeekerProfile, on_delete=models.CASCADE, related_name='privacy_settings')
+
+    # Privacy Level Preset
+    privacy_level = models.CharField(max_length=20, choices=PRIVACY_LEVEL_CHOICES, default='public')
+
+    # Basic Information Privacy
+    show_full_name = models.BooleanField(default=True, help_text="Show your full name")
+    show_profile_photo = models.BooleanField(default=True, help_text="Show your profile photo")
+    show_email = models.BooleanField(default=False, help_text="Show your email address")
+    show_phone = models.BooleanField(default=False, help_text="Show your phone number")
+    location_visibility = models.CharField(max_length=20, choices=LOCATION_VISIBILITY_CHOICES, default='city')
+
+    # Professional Information Privacy
+    show_current_employer = models.BooleanField(default=True, help_text="Show your current employer")
+    work_history_visibility = models.CharField(max_length=20, choices=WORK_HISTORY_VISIBILITY_CHOICES, default='all')
+    show_education = models.BooleanField(default=True, help_text="Show education history")
+    show_skills = models.BooleanField(default=True, help_text="Show skills and certifications")
+    show_resume = models.BooleanField(default=True, help_text="Allow resume downloads")
+
+    # Additional Settings
+    searchable_by_recruiters = models.BooleanField(default=True, help_text="Make profile searchable by recruiters")
+    allow_recruiter_messages = models.BooleanField(default=True, help_text="Allow recruiters to message you")
+    show_salary_expectations = models.BooleanField(default=False, help_text="Show salary expectations")
+
+    # Blocked Companies
+    blocked_companies = models.TextField(blank=True, help_text="Comma-separated list of company names to block")
+
+    # Anonymous Mode
+    anonymous_mode = models.BooleanField(default=False, help_text="Apply anonymously - hide identifying information")
+
+    # Notifications
+    notify_on_profile_view = models.BooleanField(default=False, help_text="Email notification when profile is viewed")
+
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Privacy Settings'
+        verbose_name_plural = 'Privacy Settings'
+
+    def __str__(self):
+        return f"Privacy Settings for {self.profile.user.username}"
+
+    def apply_preset(self, preset):
+        """Apply a privacy preset configuration"""
+        if preset == 'public':
+            self.show_full_name = True
+            self.show_profile_photo = True
+            self.show_email = True
+            self.show_phone = True
+            self.location_visibility = 'full'
+            self.show_current_employer = True
+            self.work_history_visibility = 'all'
+            self.show_education = True
+            self.show_skills = True
+            self.show_resume = True
+            self.searchable_by_recruiters = True
+            self.allow_recruiter_messages = True
+            self.show_salary_expectations = True
+            self.anonymous_mode = False
+
+        elif preset == 'limited':
+            self.show_full_name = True
+            self.show_profile_photo = True
+            self.show_email = False
+            self.show_phone = False
+            self.location_visibility = 'city'
+            self.show_current_employer = True
+            self.work_history_visibility = 'partial'
+            self.show_education = True
+            self.show_skills = True
+            self.show_resume = False
+            self.searchable_by_recruiters = True
+            self.allow_recruiter_messages = True
+            self.show_salary_expectations = False
+            self.anonymous_mode = False
+
+        elif preset == 'private':
+            self.show_full_name = False
+            self.show_profile_photo = False
+            self.show_email = False
+            self.show_phone = False
+            self.location_visibility = 'state'
+            self.show_current_employer = False
+            self.work_history_visibility = 'hidden'
+            self.show_education = False
+            self.show_skills = True
+            self.show_resume = False
+            self.searchable_by_recruiters = False
+            self.allow_recruiter_messages = False
+            self.show_salary_expectations = False
+            self.anonymous_mode = True
+
+        self.privacy_level = preset
+
+    def get_blocked_companies_list(self):
+        """Return list of blocked companies"""
+        if self.blocked_companies:
+            return [company.strip() for company in self.blocked_companies.split(',') if company.strip()]
+        return []
+
+    def is_company_blocked(self, company_name):
+        """Check if a company is in the blocked list"""
+        blocked_list = self.get_blocked_companies_list()
+        return company_name.lower() in [company.lower() for company in blocked_list]

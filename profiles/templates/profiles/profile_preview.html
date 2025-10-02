@@ -1,0 +1,163 @@
+{% extends 'base.html' %}
+
+{% block title %}Profile Preview - LockedIn{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- Preview Banner -->
+    <div class="alert alert-info alert-dismissible fade show" role="alert">
+        <i class="fas fa-eye me-2"></i>
+        <strong>Preview Mode:</strong> This is how recruiters see your profile based on your current privacy settings.
+        <a href="{% url 'privacy_settings' %}" class="alert-link">Adjust Privacy Settings</a>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <!-- Header Section -->
+                    <div class="text-center mb-4">
+                        {% if privacy_settings.show_profile_photo and user_profile.profile_picture %}
+                            <img src="{{ user_profile.profile_picture.url }}" alt="Profile" class="rounded-circle mb-3" style="width: 120px; height: 120px; object-fit: cover;">
+                        {% elif not privacy_settings.show_profile_photo or privacy_settings.anonymous_mode %}
+                            <div class="rounded-circle bg-secondary d-inline-flex align-items-center justify-content-center mb-3" style="width: 120px; height: 120px;">
+                                <i class="fas fa-user fa-3x text-white"></i>
+                            </div>
+                        {% endif %}
+
+                        <h2>
+                            {% if privacy_settings.show_full_name and not privacy_settings.anonymous_mode %}
+                                {{ user_profile.user.get_full_name }}
+                            {% else %}
+                                Anonymous Job Seeker
+                            {% endif %}
+                        </h2>
+                        <p class="text-muted">{{ user_profile.headline }}</p>
+                    </div>
+
+                    <!-- Contact Information -->
+                    {% if privacy_settings.show_email or privacy_settings.show_phone %}
+                    <div class="mb-4">
+                        <h5><i class="fas fa-envelope me-2"></i>Contact Information</h5>
+                        <hr>
+                        {% if privacy_settings.show_email %}
+                            <p><strong>Email:</strong> {{ user_profile.user.email }}</p>
+                        {% endif %}
+                        {% if privacy_settings.show_phone and user_profile.phone %}
+                            <p><strong>Phone:</strong> {{ user_profile.phone }}</p>
+                        {% endif %}
+                        {% if privacy_settings.location_visibility != 'hidden' %}
+                            <p><strong>Location:</strong>
+                                {% if privacy_settings.location_visibility == 'full' %}
+                                    {{ user_profile.location }}
+                                {% elif privacy_settings.location_visibility == 'city' %}
+                                    {{ user_profile.location|truncatewords_html:2 }}
+                                {% elif privacy_settings.location_visibility == 'state' %}
+                                    {{ user_profile.location|truncatewords_html:1 }}
+                                {% endif %}
+                            </p>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+
+                    <!-- Bio -->
+                    {% if user_profile.bio %}
+                    <div class="mb-4">
+                        <h5><i class="fas fa-user me-2"></i>About</h5>
+                        <hr>
+                        <p>{{ user_profile.bio }}</p>
+                    </div>
+                    {% endif %}
+
+                    <!-- Skills -->
+                    {% if privacy_settings.show_skills and user_profile.skills.exists %}
+                    <div class="mb-4">
+                        <h5><i class="fas fa-code me-2"></i>Skills</h5>
+                        <hr>
+                        <div>
+                            {% for skill in user_profile.skills.all %}
+                                <span class="badge bg-primary me-2 mb-2">{{ skill.name }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Work Experience -->
+                    {% if user_profile.work_experience.exists %}
+                    <div class="mb-4">
+                        <h5><i class="fas fa-briefcase me-2"></i>Work Experience</h5>
+                        <hr>
+                        {% if privacy_settings.work_history_visibility == 'all' %}
+                            {% for exp in user_profile.work_experience.all %}
+                            <div class="mb-3">
+                                <h6>{{ exp.position }}</h6>
+                                <p class="text-muted mb-1">
+                                    {% if privacy_settings.show_current_employer or not exp.is_current %}
+                                        {{ exp.company }}
+                                    {% else %}
+                                        [Hidden - Current Employer]
+                                    {% endif %}
+                                    • {{ exp.start_date|date:"M Y" }} - {% if exp.end_date %}{{ exp.end_date|date:"M Y" }}{% else %}Present{% endif %}
+                                </p>
+                                <p>{{ exp.description }}</p>
+                            </div>
+                            {% endfor %}
+                        {% elif privacy_settings.work_history_visibility == 'partial' %}
+                            {% for exp in user_profile.work_experience.all|slice:":2" %}
+                            <div class="mb-3">
+                                <h6>{{ exp.position }}</h6>
+                                <p class="text-muted mb-1">
+                                    {% if privacy_settings.show_current_employer or not exp.is_current %}
+                                        {{ exp.company }}
+                                    {% else %}
+                                        [Hidden - Current Employer]
+                                    {% endif %}
+                                    • {{ exp.start_date|date:"M Y" }} - {% if exp.end_date %}{{ exp.end_date|date:"M Y" }}{% else %}Present{% endif %}
+                                </p>
+                                <p>{{ exp.description }}</p>
+                            </div>
+                            {% endfor %}
+                            <p class="text-muted"><em>Additional work history hidden</em></p>
+                        {% else %}
+                            <p class="text-muted"><em>Work history hidden by privacy settings</em></p>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+
+                    <!-- Education -->
+                    {% if privacy_settings.show_education and user_profile.education.exists %}
+                    <div class="mb-4">
+                        <h5><i class="fas fa-graduation-cap me-2"></i>Education</h5>
+                        <hr>
+                        {% for edu in user_profile.education.all %}
+                        <div class="mb-3">
+                            <h6>{{ edu.degree }} in {{ edu.field_of_study }}</h6>
+                            <p class="text-muted mb-1">
+                                {{ edu.institution }} • {{ edu.start_date|date:"Y" }} - {% if edu.end_date %}{{ edu.end_date|date:"Y" }}{% else %}Present{% endif %}
+                            </p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <!-- Privacy Notice -->
+                    {% if privacy_settings.anonymous_mode %}
+                    <div class="alert alert-warning mt-4">
+                        <i class="fas fa-user-secret me-2"></i>
+                        <strong>Anonymous Mode Active:</strong> Your identifying information is hidden. Recruiters will only see your skills and experience.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Back to Settings -->
+            <div class="text-center mt-4">
+                <a href="{% url 'privacy_settings' %}" class="btn btn-primary">
+                    <i class="fas fa-cog me-1"></i>Back to Privacy Settings
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

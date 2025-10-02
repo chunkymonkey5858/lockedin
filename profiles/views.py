@@ -5,13 +5,14 @@ from django.contrib import messages
 from django.db import transaction, models
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
-from .models import CustomUser, JobSeekerProfile, AdminActionLog
+from .models import CustomUser, JobSeekerProfile, AdminActionLog, PrivacySettings
 from .forms import (
-    UserRegistrationForm, JobSeekerRegistrationForm, JobSeekerProfileForm, 
+    UserRegistrationForm, JobSeekerRegistrationForm, JobSeekerProfileForm,
     SkillFormSet, EducationFormSet, WorkExperienceFormSet, LinkFormSet,
-    UserSearchForm, UserStatusUpdateForm, UserRoleUpdateForm, UserDeleteForm
+    UserSearchForm, UserStatusUpdateForm, UserRoleUpdateForm, UserDeleteForm,
+    PrivacySettingsForm
 )
-from jobs.models import JobPosting, JobApplication
+from jobs.models import JobPosting, JobApplication, JobCategory
 from jobs.forms import JobPostingForm, JobApplicationForm
 
 def create_professional_profile(request):
@@ -514,8 +515,18 @@ def my_applications(request):
         applicant=request.user
     ).select_related('job', 'job__posted_by').order_by('-applied_at')
     
+    # Precompute simple stats for the template to avoid complex template logic
+    total_applications = applications.count()
+    count_applied = applications.filter(status='applied').count()
+    count_interview = applications.filter(status='interview').count()
+    count_accepted = applications.filter(outcome='accepted').count()
+    
     return render(request, 'profiles/my_applications.html', {
-        'applications': applications
+        'applications': applications,
+        'total_applications': total_applications,
+        'count_applied': count_applied,
+        'count_interview': count_interview,
+        'count_accepted': count_accepted,
     })
 
 # Recruiter views
@@ -531,9 +542,24 @@ def post_job(request):
         if form.is_valid():
             job = form.save(commit=False)
             job.posted_by = request.user
+            save_action = request.POST.get('save_action')
+            if save_action == 'save_draft':
+                job.status = 'draft'
+                job.is_active = False
+            else:
+                job.status = 'published'
+                job.is_active = True
             job.save()
+            if job.status == 'draft':
+                messages.success(request, 'Draft saved. You can continue editing from My Jobs before publishing.')
+                return redirect('my_job_postings')
             messages.success(request, 'Job posted successfully!')
             return redirect('my_job_postings')
+        else:
+            # Surface validation messages so you can see what's blocking submission
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f"{field}: {error}")
     else:
         form = JobPostingForm()
     
@@ -545,12 +571,80 @@ def my_job_postings(request):
     if request.user.user_type != 'recruiter':
         messages.error(request, 'Only recruiters can view job postings.')
         return redirect('home')
-    
+
     jobs = JobPosting.objects.filter(posted_by=request.user).order_by('-posted_at')
-    
+
     return render(request, 'profiles/my_job_postings.html', {
         'jobs': jobs
     })
+
+@login_required
+def my_drafts(request):
+    """Display recruiter's draft job postings with search and filtering"""
+    if request.user.user_type != 'recruiter':
+        messages.error(request, 'Only recruiters can view drafts.')
+        return redirect('home')
+
+    # Get all drafts for this recruiter
+    drafts = JobPosting.objects.filter(posted_by=request.user, status='draft').order_by('-updated_at')
+
+    # Search functionality
+    search_query = request.GET.get('search', '').strip()
+    if search_query:
+        drafts = drafts.filter(
+            models.Q(title__icontains=search_query) |
+            models.Q(company__icontains=search_query) |
+            models.Q(description__icontains=search_query)
+        )
+
+    # Filter by location
+    location_filter = request.GET.get('location', '').strip()
+    if location_filter:
+        drafts = drafts.filter(location__icontains=location_filter)
+
+    # Filter by category (department)
+    category_filter = request.GET.get('category', '').strip()
+    if category_filter:
+        drafts = drafts.filter(category__id=category_filter)
+
+    # Sort options
+    sort_by = request.GET.get('sort', 'updated')  # Default to last modified
+    if sort_by == 'created':
+        drafts = drafts.order_by('-posted_at')
+    elif sort_by == 'title':
+        drafts = drafts.order_by('title')
+    else:  # updated
+        drafts = drafts.order_by('-updated_at')
+
+    # Get all categories for filter dropdown
+    categories = JobCategory.objects.all()
+
+    return render(request, 'profiles/my_drafts.html', {
+        'drafts': drafts,
+        'categories': categories,
+        'search_query': search_query,
+        'location_filter': location_filter,
+        'category_filter': category_filter,
+        'sort_by': sort_by,
+    })
+
+@login_required
+def publish_job(request, job_id):
+    job = get_object_or_404(JobPosting, id=job_id, posted_by=request.user)
+    job.status = 'published'
+    job.is_active = True
+    job.save(update_fields=['status', 'is_active'])
+    messages.success(request, 'Job has been published.')
+    return redirect('my_job_postings')
+
+@login_required
+def unpublish_job(request, job_id):
+    job = get_object_or_404(JobPosting, id=job_id, posted_by=request.user)
+    job.status = 'draft'
+    job.is_active = False
+    job.save(update_fields=['status', 'is_active'])
+    messages.success(request, 'Job has been moved to draft.')
+    return redirect('my_job_postings')
 
 @login_required
 def job_applications(request, job_id):
@@ -850,9 +944,92 @@ def admin_action_logs(request):
     paginator = Paginator(logs, 50)  # Show 50 logs per page
     page_number = request.GET.get('page')
     logs_page = paginator.get_page(page_number)
-    
+
     context = {
         'logs': logs_page,
     }
-    
+
     return render(request, 'profiles/admin_action_logs.html', context)
+
+# Privacy Settings Views
+@login_required
+def privacy_settings(request):
+    """Manage privacy settings for job seekers"""
+    if request.user.user_type != 'job_seeker':
+        messages.error(request, 'Only job seekers can access privacy settings.')
+        return redirect('home')
+
+    # Get or create privacy settings for this user's profile
+    try:
+        profile = request.user.job_seeker_profile
+    except JobSeekerProfile.DoesNotExist:
+        messages.error(request, 'Please create your profile first.')
+        return redirect('create_profile')
+
+    # Get or create privacy settings
+    privacy_settings_obj, created = PrivacySettings.objects.get_or_create(profile=profile)
+
+    if request.method == 'POST':
+        # Check if a preset was selected
+        preset_value = request.POST.get('apply_preset', '').strip()
+        if preset_value and preset_value in ['public', 'limited', 'private']:
+            privacy_settings_obj.apply_preset(preset_value)
+            privacy_settings_obj.save()
+            messages.success(request, f'{preset_value.capitalize()} privacy preset applied successfully!')
+            return redirect('privacy_settings')
+
+        # Handle form submission
+        form = PrivacySettingsForm(request.POST, instance=privacy_settings_obj)
+        if form.is_valid():
+            updated_settings = form.save(commit=False)
+            # If custom selections made, set privacy_level to 'custom'
+            if updated_settings.privacy_level != form.initial.get('privacy_level'):
+                # User changed preset, apply it
+                pass
+            else:
+                # User manually changed fields, mark as custom
+                updated_settings.privacy_level = 'custom'
+            updated_settings.save()
+            messages.success(request, 'Privacy settings updated successfully!')
+            return redirect('privacy_settings')
+        else:
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f'{field}: {error}')
+    else:
+        form = PrivacySettingsForm(instance=privacy_settings_obj)
+
+    context = {
+        'form': form,
+        'privacy_settings': privacy_settings_obj,
+        'profile': profile,
+    }
+
+    return render(request, 'profiles/privacy_settings.html', context)
+
+@login_required
+def preview_profile(request):
+    """Preview profile as recruiters would see it"""
+    if request.user.user_type != 'job_seeker':
+        messages.error(request, 'Only job seekers can preview their profile.')
+        return redirect('home')
+
+    try:
+        profile = request.user.job_seeker_profile
+    except JobSeekerProfile.DoesNotExist:
+        messages.error(request, 'Please create your profile first.')
+        return redirect('create_profile')
+
+    # Get privacy settings
+    try:
+        privacy_settings_obj = profile.privacy_settings
+    except PrivacySettings.DoesNotExist:
+        privacy_settings_obj = PrivacySettings.objects.create(profile=profile)
+
+    context = {
+        'user_profile': profile,
+        'privacy_settings': privacy_settings_obj,
+        'is_preview': True,
+    }
+
+    return render(request, 'profiles/profile_preview.html', context)

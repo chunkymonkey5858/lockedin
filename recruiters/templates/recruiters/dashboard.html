@@ -9,6 +9,9 @@
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h1>Recruiter Dashboard</h1>
                 <div>
+                    <a href="{% url 'recruiters:candidate_recommendations' %}" class="btn btn-primary me-2">
+                        <i class="fas fa-users me-1"></i>Candidate Recommendations
+                    </a>
                     <a href="{% url 'jobs:post_job' %}" class="btn btn-primary me-2">
                         <i class="fas fa-plus me-1"></i>Post a Job
                     </a>
@@ -77,6 +80,20 @@
                 </div>
             </div>
         </div>
+        
+        <!-- Quick Access Card for Candidate Recommendations -->
+            <div class="col-md-3 mb-4">
+                <div class="card border-primary">
+                    <div class="card-body text-center">
+                        <i class="fas fa-magic fa-3x text-primary mb-3"></i>
+                        <h6 class="card-title">Smart Recommendations</h6>
+                        <p class="card-text small">Get AI-powered candidate matches for your jobs</p>
+                        <a href="{% url 'recruiters:candidate_recommendations' %}" class="btn btn-primary btn-sm">
+                            <i class="fas fa-users me-1"></i>View Recommendations
+                        </a>
+                    </div>
+                </div>
+            </div>
     </div>
     
     <div class="row">

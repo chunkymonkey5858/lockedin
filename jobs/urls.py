@@ -20,6 +20,9 @@ urlpatterns = [
     # User applications
     path('my-applications/', views.my_applications, name='my_applications'),
     
+    # Job recommendations
+    path('recommendations/', views.job_recommendations, name='job_recommendations'),
+    
     # AJAX endpoints
     path('applications/<int:application_id>/update-status/', views.update_application_status, name='update_application_status'),
 ]

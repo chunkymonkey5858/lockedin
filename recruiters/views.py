@@ -6,6 +6,7 @@ from django.db.models import Q, Count
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from profiles.models import JobSeekerProfile, Skill, WorkExperience, Education
+from jobs.models import JobPosting, JobSkill
 from .models import RecruiterProfile, SavedSearch, CandidateNote
 from .forms import CandidateSearchForm, SavedSearchForm, CandidateNoteForm
 
@@ -282,3 +283,166 @@ def delete_saved_search(request, search_id):
     }
     
     return render(request, 'recruiters/delete_saved_search.html', context)
+
+@login_required
+def candidate_recommendations(request):
+    """Recommend candidates based on recruiter's job postings"""
+    # Only for recruiters
+    if not hasattr(request.user, 'recruiter_profile'):
+        messages.error(request, 'Candidate recommendations are only available for recruiters.')
+        return redirect('home')
+    
+    recruiter = request.user.recruiter_profile
+    
+    # Get recruiter's active job postings
+    recruiter_jobs = JobPosting.objects.filter(
+        posted_by=request.user,
+        is_active=True,
+        status='published'
+    ).prefetch_related('required_skills')
+    
+    if not recruiter_jobs.exists():
+        messages.info(request, 'Post some job openings to get candidate recommendations!')
+        context = {
+            'recommended_candidates': [],
+            'recruiter_jobs': [],
+            'skill_match_info': {},
+            'recommendation_type': 'no_jobs'
+        }
+        return render(request, 'recruiters/candidate_recommendations.html', context)
+    
+    # Collect all required skills from recruiter's job postings
+    all_job_skills = set()
+    job_skills_map = {}
+    
+    for job in recruiter_jobs:
+        job_skills = list(job.required_skills.values_list('name', flat=True))
+        job_skills_map[job.id] = job_skills
+        all_job_skills.update(job_skills)
+    
+    if not all_job_skills:
+        messages.info(request, 'Add required skills to your job postings to get better candidate recommendations!')
+        # Show general candidates
+        recommended_candidates = JobSeekerProfile.objects.filter(
+            is_public=True
+        ).select_related('user').prefetch_related('skills', 'work_experience', 'education')[:10]
+        
+        context = {
+            'recommended_candidates': recommended_candidates,
+            'recruiter_jobs': recruiter_jobs,
+            'skill_match_info': {},
+            'recommendation_type': 'general'
+        }
+        return render(request, 'recruiters/candidate_recommendations.html', context)
+    
+    # Get all public job seeker profiles
+    all_candidates = JobSeekerProfile.objects.filter(
+        is_public=True
+    ).select_related('user').prefetch_related('skills', 'work_experience', 'education')
+    
+    # Calculate skill match scores for each candidate
+    candidate_scores = []
+    skill_match_info = {}
+    
+    for candidate in all_candidates:
+        candidate_skills = list(candidate.skills.values_list('name', flat=True))
+        
+        if not candidate_skills:
+            # Candidates without skills get a low default score
+            match_score = 0.1
+            matched_skills = []
+            missing_skills = list(all_job_skills)
+            best_job_match = None
+            best_job_score = 0
+        else:
+            # Calculate matches against all job skills
+            matched_skills = []
+            for job_skill in all_job_skills:
+                for candidate_skill in candidate_skills:
+                    if job_skill.lower() == candidate_skill.lower():
+                        matched_skills.append(job_skill)
+                        break
+            
+            # Calculate partial matches (substring matching)
+            partial_matches = []
+            for job_skill in all_job_skills:
+                if job_skill not in matched_skills:
+                    for candidate_skill in candidate_skills:
+                        if (candidate_skill.lower() in job_skill.lower() or 
+                            job_skill.lower() in candidate_skill.lower()):
+                            partial_matches.append(job_skill)
+                            break
+            
+            # Calculate overall match score
+            total_job_skills = len(all_job_skills)
+            exact_matches = len(matched_skills)
+            partial_match_count = len(partial_matches)
+            
+            # Scoring: exact matches = 1 point, partial matches = 0.5 points
+            match_score = (exact_matches + (partial_match_count * 0.5)) / total_job_skills
+            
+            # Missing skills
+            missing_skills = [skill for skill in all_job_skills 
+                            if skill not in matched_skills and skill not in partial_matches]
+            
+            # Find best matching job for this candidate
+            best_job_match = None
+            best_job_score = 0
+            
+            for job in recruiter_jobs:
+                job_skills = job_skills_map[job.id]
+                if not job_skills:
+                    continue
+                    
+                job_matched = []
+                for job_skill in job_skills:
+                    for candidate_skill in candidate_skills:
+                        if job_skill.lower() == candidate_skill.lower():
+                            job_matched.append(job_skill)
+                            break
+                
+                job_score = len(job_matched) / len(job_skills) if job_skills else 0
+                if job_score > best_job_score:
+                    best_job_score = job_score
+                    best_job_match = job
+        
+        # Store match information
+        skill_match_info[candidate.id] = {
+            'matched_skills': matched_skills,
+            'partial_matches': partial_matches if 'partial_matches' in locals() else [],
+            'missing_skills': missing_skills,
+            'match_percentage': round(match_score * 100, 1),
+            'total_required': len(all_job_skills),
+            'best_job_match': best_job_match,
+            'best_job_score': round(best_job_score * 100, 1) if best_job_match else 0
+        }
+        
+        candidate_scores.append((candidate, match_score))
+    
+    # Sort candidates by match score (highest first)
+    candidate_scores.sort(key=lambda x: x[1], reverse=True)
+    
+    # Get top recommendations
+    recommended_candidates = [candidate for candidate, score in candidate_scores[:20]]  # Top 20 matches
+    
+    # Categorize recommendations
+    high_match_candidates = [candidate for candidate in recommended_candidates 
+                           if skill_match_info[candidate.id]['match_percentage'] >= 70]
+    medium_match_candidates = [candidate for candidate in recommended_candidates 
+                             if 40 <= skill_match_info[candidate.id]['match_percentage'] < 70]
+    potential_candidates = [candidate for candidate in recommended_candidates 
+                          if skill_match_info[candidate.id]['match_percentage'] < 40]
+    
+    context = {
+        'recommended_candidates': recommended_candidates,
+        'high_match_candidates': high_match_candidates,
+        'medium_match_candidates': medium_match_candidates,
+        'potential_candidates': potential_candidates,
+        'recruiter_jobs': recruiter_jobs,
+        'all_job_skills': list(all_job_skills),
+        'skill_match_info': skill_match_info,
+        'recommendation_type': 'personalized',
+        'recruiter': recruiter
+    }
+    
+    return render(request, 'recruiters/candidate_recommendations.html', context)

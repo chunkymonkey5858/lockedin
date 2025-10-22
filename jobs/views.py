@@ -7,7 +7,27 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from .models import JobPosting, JobCategory, JobApplication, JobSkill
 from .forms import JobPostingForm, JobApplicationForm
+from .utils import get_user_location_from_request
 from profiles.models import JobSeekerProfile, Skill
+import math
+
+def calculate_distance(lat1, lon1, lat2, lon2):
+    """Calculate the great circle distance between two points on Earth in miles"""
+    if not all([lat1, lon1, lat2, lon2]):
+        return None
+    
+    # Convert latitude and longitude from degrees to radians
+    lat1, lon1, lat2, lon2 = map(math.radians, [lat1, lon1, lat2, lon2])
+    
+    # Haversine formula
+    dlat = lat2 - lat1
+    dlon = lon2 - lon1
+    a = math.sin(dlat/2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon/2)**2
+    c = 2 * math.asin(math.sqrt(a))
+    
+    # Radius of earth in miles
+    r = 3959
+    return c * r
 
 def job_list(request):
     """List all active job postings with filtering"""
@@ -20,6 +40,9 @@ def job_list(request):
     employment_type = request.GET.get('employment_type', '')
     experience_level = request.GET.get('experience_level', '')
     skills = request.GET.get('skills', '')
+    radius = request.GET.get('radius', '')
+    user_lat = request.GET.get('user_lat', '')
+    user_lon = request.GET.get('user_lon', '')
     
     if search:
         jobs = jobs.filter(
@@ -46,6 +69,40 @@ def job_list(request):
         if skills_list:
             jobs = jobs.filter(required_skills__name__in=skills_list).distinct()
     
+    # Location-based filtering with radius
+    if radius:
+        # Try to get user location from request parameters or profile
+        user_lat, user_lon = get_user_location_from_request(request)
+        
+        if user_lat and user_lon:
+            try:
+                radius_miles = float(radius)
+                
+                # Get all jobs first, then filter by distance
+                all_jobs = list(jobs)
+                jobs_within_radius = []
+                
+                for job in all_jobs:
+                    if job.latitude and job.longitude:
+                        distance = calculate_distance(user_lat, user_lon, float(job.latitude), float(job.longitude))
+                        if distance is not None and distance <= radius_miles:
+                            jobs_within_radius.append(job)
+                    else:
+                        # If job doesn't have coordinates, include it if location text matches
+                        if location and location.lower() in job.location.lower():
+                            jobs_within_radius.append(job)
+                
+                # Create a new queryset with the filtered job IDs
+                if jobs_within_radius:
+                    job_ids = [job.id for job in jobs_within_radius]
+                    jobs = JobPosting.objects.filter(id__in=job_ids, is_active=True, status='published')
+                else:
+                    jobs = JobPosting.objects.none()
+                    
+            except (ValueError, TypeError):
+                # If radius/location parameters are invalid, ignore location filtering
+                pass
+    
     # Pagination
     paginator = Paginator(jobs, 10)
     page_number = request.GET.get('page')
@@ -71,6 +128,9 @@ def job_list(request):
         'selected_employment_type': employment_type,
         'selected_experience_level': experience_level,
         'selected_skills': skills,
+        'selected_radius': radius,
+        'user_lat': user_lat,
+        'user_lon': user_lon,
     }
     
     return render(request, 'jobs/job_list.html', context)
@@ -480,3 +540,129 @@ def job_recommendations(request):
     }
     
     return render(request, 'jobs/job_recommendations.html', context)
+
+@login_required
+def job_map(request):
+    """Interactive map view showing all jobs with location filtering"""
+    from jobs.utils import get_user_location_from_request
+    
+    # Get all active jobs with coordinates
+    jobs = JobPosting.objects.filter(
+        is_active=True, 
+        status='published',
+        latitude__isnull=False,
+        longitude__isnull=False
+    ).select_related('posted_by', 'category').prefetch_related('required_skills')
+    
+    # Get filter parameters
+    radius = request.GET.get('radius', '')
+    user_lat = request.GET.get('user_lat', '')
+    user_lon = request.GET.get('user_lon', '')
+    location = request.GET.get('location', '')
+    search = request.GET.get('search', '')
+    category = request.GET.get('category', '')
+    employment_type = request.GET.get('employment_type', '')
+    experience_level = request.GET.get('experience_level', '')
+    skills = request.GET.get('skills', '')
+    
+    # Apply text-based filters first
+    if search:
+        jobs = jobs.filter(
+            Q(title__icontains=search) | 
+            Q(company__icontains=search) | 
+            Q(description__icontains=search)
+        )
+    
+    if category:
+        jobs = jobs.filter(category__name__icontains=category)
+    
+    if location:
+        jobs = jobs.filter(location__icontains=location)
+    
+    if employment_type:
+        jobs = jobs.filter(employment_type=employment_type)
+    
+    if experience_level:
+        jobs = jobs.filter(experience_level=experience_level)
+    
+    if skills:
+        skills_list = [skill.strip() for skill in skills.split(',') if skill.strip()]
+        if skills_list:
+            jobs = jobs.filter(required_skills__name__in=skills_list).distinct()
+    
+    # Apply location-based filtering with radius
+    if radius:
+        user_lat, user_lon = get_user_location_from_request(request)
+        
+        if user_lat and user_lon:
+            try:
+                radius_miles = float(radius)
+                
+                # Get all jobs first, then filter by distance
+                all_jobs = list(jobs)
+                jobs_within_radius = []
+                
+                for job in all_jobs:
+                    if job.latitude and job.longitude:
+                        distance = calculate_distance(user_lat, user_lon, float(job.latitude), float(job.longitude))
+                        if distance is not None and distance <= radius_miles:
+                            jobs_within_radius.append(job)
+                    else:
+                        # If job doesn't have coordinates, include it if location text matches
+                        if location and location.lower() in job.location.lower():
+                            jobs_within_radius.append(job)
+                
+                # Create a new queryset with the filtered job IDs
+                if jobs_within_radius:
+                    job_ids = [job.id for job in jobs_within_radius]
+                    jobs = JobPosting.objects.filter(id__in=job_ids, is_active=True, status='published')
+                else:
+                    jobs = JobPosting.objects.none()
+                    
+            except (ValueError, TypeError):
+                pass
+    
+    # Get filter options
+    categories = JobCategory.objects.all()
+    employment_types = JobPosting.EMPLOYMENT_TYPES
+    experience_levels = JobPosting.EXPERIENCE_LEVELS
+    
+    # Get all unique skills for the skills filter dropdown
+    all_skills = JobSkill.objects.values_list('name', flat=True).distinct().order_by('name')
+    
+    # Prepare job data for the map
+    job_markers = []
+    for job in jobs:
+        job_markers.append({
+            'id': job.id,
+            'title': job.title,
+            'company': job.company,
+            'location': job.location,
+            'latitude': float(job.latitude),
+            'longitude': float(job.longitude),
+            'employment_type': job.get_employment_type_display(),
+            'experience_level': job.get_experience_level_display(),
+            'salary_range': job.salary_range,
+            'url': f'/jobs/{job.id}/',
+            'description': job.description[:200] + '...' if len(job.description) > 200 else job.description,
+        })
+    
+    context = {
+        'jobs': jobs,
+        'job_markers': job_markers,
+        'categories': categories,
+        'employment_types': employment_types,
+        'experience_levels': experience_levels,
+        'all_skills': all_skills,
+        'search': search,
+        'selected_category': category,
+        'selected_location': location,
+        'selected_employment_type': employment_type,
+        'selected_experience_level': experience_level,
+        'selected_skills': skills,
+        'selected_radius': radius,
+        'user_lat': user_lat,
+        'user_lon': user_lon,
+    }
+    
+    return render(request, 'jobs/job_map.html', context)

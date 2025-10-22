@@ -23,6 +23,9 @@ urlpatterns = [
     # Job recommendations
     path('recommendations/', views.job_recommendations, name='job_recommendations'),
     
+    # Interactive map
+    path('map/', views.job_map, name='job_map'),
+    
     # AJAX endpoints
     path('applications/<int:application_id>/update-status/', views.update_application_status, name='update_application_status'),
 ]

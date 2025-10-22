@@ -34,6 +34,8 @@ class JobSeekerProfile(models.Model):
     headline = models.CharField(max_length=200, help_text="Professional headline or title")
     bio = models.TextField(max_length=1000, blank=True, help_text="Brief professional summary")
     location = models.CharField(max_length=100, blank=True)
+    latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True, help_text="Latitude coordinate")
+    longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True, help_text="Longitude coordinate")
     phone = models.CharField(max_length=20, blank=True)
     website = models.URLField(blank=True)
     linkedin_url = models.URLField(blank=True)

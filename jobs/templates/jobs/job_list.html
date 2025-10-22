@@ -36,6 +36,37 @@
                         </div>
                         
                         <div class="mb-3">
+                            <label for="radius" class="form-label">Search Radius (miles)</label>
+                            <select class="form-select" id="radius" name="radius">
+                                <option value="">Any distance</option>
+                                <option value="5" {% if selected_radius == "5" %}selected{% endif %}>5 miles</option>
+                                <option value="10" {% if selected_radius == "10" %}selected{% endif %}>10 miles</option>
+                                <option value="25" {% if selected_radius == "25" %}selected{% endif %}>25 miles</option>
+                                <option value="50" {% if selected_radius == "50" %}selected{% endif %}>50 miles</option>
+                                <option value="100" {% if selected_radius == "100" %}selected{% endif %}>100 miles</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="user_lat" class="form-label">Your Latitude (optional)</label>
+                            <input type="number" step="any" class="form-control" id="user_lat" name="user_lat" value="{{ user_lat }}" placeholder="e.g., 40.7128">
+                            <small class="form-text text-muted">Enter your latitude for radius-based search</small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="user_lon" class="form-label">Your Longitude (optional)</label>
+                            <input type="number" step="any" class="form-control" id="user_lon" name="user_lon" value="{{ user_lon }}" placeholder="e.g., -74.0060">
+                            <small class="form-text text-muted">Enter your longitude for radius-based search</small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <button type="button" class="btn btn-outline-primary btn-sm" id="getLocationBtn">
+                                <i class="fas fa-map-marker-alt"></i> Get My Location
+                            </button>
+                            <small class="form-text text-muted d-block">Click to automatically detect your location</small>
+                        </div>
+                        
+                        <div class="mb-3">
                             <label for="employment_type" class="form-label">Employment Type</label>
                             <select class="form-select" id="employment_type" name="employment_type">
                                 <option value="">All Types</option>
@@ -78,9 +109,14 @@
             <!-- Job Listings -->
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h2>Job Listings</h2>
-                {% if user.is_authenticated and user.user_type == 'recruiter' %}
-                    <a href="{% url 'jobs:post_job' %}" class="btn btn-success">Post a Job</a>
-                {% endif %}
+                <div>
+                    <a href="{% url 'jobs:job_map' %}" class="btn btn-info me-2">
+                        <i class="fas fa-map-marked-alt me-1"></i>Map View
+                    </a>
+                    {% if user.is_authenticated and user.user_type == 'recruiter' %}
+                        <a href="{% url 'jobs:post_job' %}" class="btn btn-success">Post a Job</a>
+                    {% endif %}
+                </div>
             </div>
             
             {% if jobs %}
@@ -147,7 +183,7 @@
                         <ul class="pagination justify-content-center">
                             {% if jobs.has_previous %}
                                 <li class="page-item">
-                                    <a class="page-link" href="?{% if search %}search={{ search }}&{% endif %}{% if selected_category %}category={{ selected_category }}&{% endif %}{% if selected_location %}location={{ selected_location }}&{% endif %}{% if selected_employment_type %}employment_type={{ selected_employment_type }}&{% endif %}{% if selected_experience_level %}experience_level={{ selected_experience_level }}&{% endif %}{% if selected_skills %}skills={{ selected_skills }}&{% endif %}page={{ jobs.previous_page_number }}">Previous</a>
+                                    <a class="page-link" href="?{% if search %}search={{ search }}&{% endif %}{% if selected_category %}category={{ selected_category }}&{% endif %}{% if selected_location %}location={{ selected_location }}&{% endif %}{% if selected_employment_type %}employment_type={{ selected_employment_type }}&{% endif %}{% if selected_experience_level %}experience_level={{ selected_experience_level }}&{% endif %}{% if selected_skills %}skills={{ selected_skills }}&{% endif %}{% if selected_radius %}radius={{ selected_radius }}&{% endif %}{% if user_lat %}user_lat={{ user_lat }}&{% endif %}{% if user_lon %}user_lon={{ user_lon }}&{% endif %}page={{ jobs.previous_page_number }}">Previous</a>
                                 </li>
                             {% endif %}
                             
@@ -158,14 +194,14 @@
                                     </li>
                                 {% elif num > jobs.number|add:'-3' and num < jobs.number|add:'3' %}
                                     <li class="page-item">
-                                        <a class="page-link" href="?{% if search %}search={{ search }}&{% endif %}{% if selected_category %}category={{ selected_category }}&{% endif %}{% if selected_location %}location={{ selected_location }}&{% endif %}{% if selected_employment_type %}employment_type={{ selected_employment_type }}&{% endif %}{% if selected_experience_level %}experience_level={{ selected_experience_level }}&{% endif %}{% if selected_skills %}skills={{ selected_skills }}&{% endif %}page={{ num }}">{{ num }}</a>
+                                        <a class="page-link" href="?{% if search %}search={{ search }}&{% endif %}{% if selected_category %}category={{ selected_category }}&{% endif %}{% if selected_location %}location={{ selected_location }}&{% endif %}{% if selected_employment_type %}employment_type={{ selected_employment_type }}&{% endif %}{% if selected_experience_level %}experience_level={{ selected_experience_level }}&{% endif %}{% if selected_skills %}skills={{ selected_skills }}&{% endif %}{% if selected_radius %}radius={{ selected_radius }}&{% endif %}{% if user_lat %}user_lat={{ user_lat }}&{% endif %}{% if user_lon %}user_lon={{ user_lon }}&{% endif %}page={{ num }}">{{ num }}</a>
                                     </li>
                                 {% endif %}
                             {% endfor %}
                             
                             {% if jobs.has_next %}
                                 <li class="page-item">
-                                    <a class="page-link" href="?{% if search %}search={{ search }}&{% endif %}{% if selected_category %}category={{ selected_category }}&{% endif %}{% if selected_location %}location={{ selected_location }}&{% endif %}{% if selected_employment_type %}employment_type={{ selected_employment_type }}&{% endif %}{% if selected_experience_level %}experience_level={{ selected_experience_level }}&{% endif %}{% if selected_skills %}skills={{ selected_skills }}&{% endif %}page={{ jobs.next_page_number }}">Next</a>
+                                    <a class="page-link" href="?{% if search %}search={{ search }}&{% endif %}{% if selected_category %}category={{ selected_category }}&{% endif %}{% if selected_location %}location={{ selected_location }}&{% endif %}{% if selected_employment_type %}employment_type={{ selected_employment_type }}&{% endif %}{% if selected_experience_level %}experience_level={{ selected_experience_level }}&{% endif %}{% if selected_skills %}skills={{ selected_skills }}&{% endif %}{% if selected_radius %}radius={{ selected_radius }}&{% endif %}{% if user_lat %}user_lat={{ user_lat }}&{% endif %}{% if user_lon %}user_lon={{ user_lon }}&{% endif %}page={{ jobs.next_page_number }}">Next</a>
                                 </li>
                             {% endif %}
                         </ul>
@@ -180,4 +216,37 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const getLocationBtn = document.getElementById('getLocationBtn');
+    const latInput = document.getElementById('user_lat');
+    const lonInput = document.getElementById('user_lon');
+    
+    if (getLocationBtn) {
+        getLocationBtn.addEventListener('click', function() {
+            if (navigator.geolocation) {
+                getLocationBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Getting location...';
+                getLocationBtn.disabled = true;
+                
+                navigator.geolocation.getCurrentPosition(
+                    function(position) {
+                        latInput.value = position.coords.latitude.toFixed(6);
+                        lonInput.value = position.coords.longitude.toFixed(6);
+                        getLocationBtn.innerHTML = '<i class="fas fa-map-marker-alt"></i> Get My Location';
+                        getLocationBtn.disabled = false;
+                    },
+                    function(error) {
+                        alert('Unable to get your location. Please enter coordinates manually.');
+                        getLocationBtn.innerHTML = '<i class="fas fa-map-marker-alt"></i> Get My Location';
+                        getLocationBtn.disabled = false;
+                    }
+                );
+            } else {
+                alert('Geolocation is not supported by this browser.');
+            }
+        });
+    }
+});
+</script>
 {% endblock %}

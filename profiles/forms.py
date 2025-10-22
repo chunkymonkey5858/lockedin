@@ -46,7 +46,7 @@ class JobSeekerRegistrationForm(UserRegistrationForm):
 class JobSeekerProfileForm(forms.ModelForm):
     class Meta:
         model = JobSeekerProfile
-        fields = ['headline', 'bio', 'location', 'phone', 'website', 'linkedin_url', 
+        fields = ['headline', 'bio', 'location', 'latitude', 'longitude', 'phone', 'website', 'linkedin_url', 
                  'github_url', 'portfolio_url', 'profile_picture', 'is_public']
         widgets = {
             'headline': forms.TextInput(attrs={
@@ -61,6 +61,20 @@ class JobSeekerProfileForm(forms.ModelForm):
             'location': forms.TextInput(attrs={
                 'class': 'form-control',
                 'placeholder': 'e.g., San Francisco, CA'
+            }),
+            'latitude': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'e.g., 37.7749',
+                'step': 'any',
+                'min': '-90',
+                'max': '90'
+            }),
+            'longitude': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'e.g., -122.4194',
+                'step': 'any',
+                'min': '-180',
+                'max': '180'
             }),
             'phone': forms.TextInput(attrs={
                 'class': 'form-control',

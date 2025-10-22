@@ -43,6 +43,8 @@ class JobPosting(models.Model):
     title = models.CharField(max_length=200, blank=True)
     company = models.CharField(max_length=200, blank=True)
     location = models.CharField(max_length=200, blank=True)
+    latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True, help_text="Latitude coordinate")
+    longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True, help_text="Longitude coordinate")
     work_location = models.CharField(max_length=20, choices=WORK_LOCATIONS, default='on_site')
     employment_type = models.CharField(max_length=20, choices=EMPLOYMENT_TYPES, default='full_time')
     experience_level = models.CharField(max_length=20, choices=EXPERIENCE_LEVELS, default='mid')

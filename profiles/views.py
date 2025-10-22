@@ -310,8 +310,28 @@ def custom_logout(request):
 def job_list(request):
     """Display all active job postings with filtering"""
     from jobs.models import JobPosting, JobCategory, JobSkill
+    from jobs.utils import get_user_location_from_request
     from django.db.models import Q
     from django.core.paginator import Paginator
+    import math
+    
+    def calculate_distance(lat1, lon1, lat2, lon2):
+        """Calculate the great circle distance between two points on Earth in miles"""
+        if not all([lat1, lon1, lat2, lon2]):
+            return None
+        
+        # Convert latitude and longitude from degrees to radians
+        lat1, lon1, lat2, lon2 = map(math.radians, [lat1, lon1, lat2, lon2])
+        
+        # Haversine formula
+        dlat = lat2 - lat1
+        dlon = lon2 - lon1
+        a = math.sin(dlat/2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon/2)**2
+        c = 2 * math.asin(math.sqrt(a))
+        
+        # Radius of earth in miles
+        r = 3959
+        return c * r
     
     jobs = JobPosting.objects.filter(is_active=True).select_related('posted_by', 'category').prefetch_related('required_skills').order_by('-posted_at')
     
@@ -327,6 +347,9 @@ def job_list(request):
     salary_min = request.GET.get('salary_min', '')
     salary_max = request.GET.get('salary_max', '')
     visa_sponsorship = request.GET.get('visa_sponsorship', '')
+    radius = request.GET.get('radius', '')
+    user_lat = request.GET.get('user_lat', '')
+    user_lon = request.GET.get('user_lon', '')
     
     if search:
         jobs = jobs.filter(
@@ -391,6 +414,40 @@ def job_list(request):
     elif visa_sponsorship == 'false':
         jobs = jobs.filter(visa_sponsorship=False)
     
+    # Location-based filtering with radius
+    if radius:
+        # Try to get user location from request parameters or profile
+        user_lat, user_lon = get_user_location_from_request(request)
+        
+        if user_lat and user_lon:
+            try:
+                radius_miles = float(radius)
+                
+                # Get all jobs first, then filter by distance
+                all_jobs = list(jobs)
+                jobs_within_radius = []
+                
+                for job in all_jobs:
+                    if job.latitude and job.longitude:
+                        distance = calculate_distance(user_lat, user_lon, float(job.latitude), float(job.longitude))
+                        if distance is not None and distance <= radius_miles:
+                            jobs_within_radius.append(job)
+                    else:
+                        # If job doesn't have coordinates, include it if location text matches
+                        if location and location.lower() in job.location.lower():
+                            jobs_within_radius.append(job)
+                
+                # Create a new queryset with the filtered job IDs
+                if jobs_within_radius:
+                    job_ids = [job.id for job in jobs_within_radius]
+                    jobs = JobPosting.objects.filter(id__in=job_ids, is_active=True).order_by('-posted_at')
+                else:
+                    jobs = JobPosting.objects.none()
+                    
+            except (ValueError, TypeError):
+                # If radius/location parameters are invalid, ignore location filtering
+                pass
+    
     # Pagination
     paginator = Paginator(jobs, 10)  # 10 jobs per page (5 rows of 2 jobs each)
     page_number = request.GET.get('page')
@@ -429,6 +486,9 @@ def job_list(request):
         'selected_salary_min': salary_min,
         'selected_salary_max': salary_max,
         'selected_visa_sponsorship': visa_sponsorship,
+        'selected_radius': radius,
+        'user_lat': user_lat,
+        'user_lon': user_lon,
     }
     return render(request, 'profiles/job_list.html', context)
 

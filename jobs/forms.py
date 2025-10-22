@@ -8,7 +8,7 @@ class JobPostingForm(forms.ModelForm):
     class Meta:
         model = JobPosting
         fields = [
-            'title', 'company', 'location', 'work_location', 'employment_type',
+            'title', 'company', 'location', 'latitude', 'longitude', 'work_location', 'employment_type',
             'experience_level', 'description', 'requirements', 'responsibilities',
             'benefits', 'salary_min', 'salary_max', 'salary_currency', 'salary_period',
             'category', 'application_deadline'
@@ -28,6 +28,20 @@ class JobPostingForm(forms.ModelForm):
                 'class': 'form-control',
                 'placeholder': 'e.g., San Francisco, CA or Remote',
                 'required': True
+            }),
+            'latitude': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'e.g., 37.7749',
+                'step': 'any',
+                'min': '-90',
+                'max': '90'
+            }),
+            'longitude': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'e.g., -122.4194',
+                'step': 'any',
+                'min': '-180',
+                'max': '180'
             }),
             'work_location': forms.Select(attrs={'class': 'form-select'}),
             'employment_type': forms.Select(attrs={'class': 'form-select'}),

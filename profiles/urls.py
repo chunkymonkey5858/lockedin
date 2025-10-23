@@ -48,16 +48,13 @@ urlpatterns = [
     path('admin/update-user-status/<int:user_id>/', views.admin_update_user_status, name='admin_update_user_status'),
     path('admin/update-user-role/<int:user_id>/', views.admin_update_user_role, name='admin_update_user_role'),
     path('admin/delete-user/<int:user_id>/', views.admin_delete_user, name='admin_delete_user'),
-<<<<<<< HEAD
-    
+
     # Messaging URLs
     path('conversations/', views.conversations_list, name='conversations_list'),
     path('conversations/<int:conversation_id>/', views.conversation_detail, name='conversation_detail'),
     path('conversations/start/<int:user_id>/', views.start_conversation, name='start_conversation'),
     path('conversations/<int:conversation_id>/send-message/', views.send_message_ajax, name='send_message_ajax'),
     path('conversations/<int:conversation_id>/mark-read/', views.mark_messages_read, name='mark_messages_read'),
-=======
->>>>>>> 1006d701f30381b457008f6864a47881b413ab68
 
 ]
 

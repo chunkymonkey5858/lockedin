@@ -5,21 +5,13 @@ from django.contrib import messages
 from django.db import transaction, models
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
-<<<<<<< HEAD
 from django.utils import timezone
 from .models import CustomUser, JobSeekerProfile, AdminActionLog, PrivacySettings, Conversation, Message
-=======
-from .models import CustomUser, JobSeekerProfile, AdminActionLog, PrivacySettings
->>>>>>> 1006d701f30381b457008f6864a47881b413ab68
 from .forms import (
     UserRegistrationForm, JobSeekerRegistrationForm, JobSeekerProfileForm,
     SkillFormSet, EducationFormSet, WorkExperienceFormSet, LinkFormSet,
     UserSearchForm, UserStatusUpdateForm, UserRoleUpdateForm, UserDeleteForm,
-<<<<<<< HEAD
     PrivacySettingsForm, MessageForm, ConversationForm
-=======
-    PrivacySettingsForm
->>>>>>> 1006d701f30381b457008f6864a47881b413ab68
 )
 from jobs.models import JobPosting, JobApplication, JobCategory
 from jobs.forms import JobPostingForm, JobApplicationForm
@@ -1112,7 +1104,6 @@ def preview_profile(request):
         'is_preview': True,
     }
 
-<<<<<<< HEAD
     return render(request, 'profiles/profile_preview.html', context)
 
 # ==================== MESSAGING VIEWS ====================
@@ -1121,7 +1112,7 @@ def preview_profile(request):
 def conversations_list(request):
     """List all conversations for the current user"""
     user = request.user
-    
+
     if user.user_type == 'recruiter':
         conversations = Conversation.objects.filter(recruiter=user, is_active=True).select_related(
             'job_seeker', 'job_posting'
@@ -1130,38 +1121,38 @@ def conversations_list(request):
         conversations = Conversation.objects.filter(job_seeker=user, is_active=True).select_related(
             'recruiter', 'job_posting'
         ).prefetch_related('messages')
-    
+
     # Get unread message counts for each conversation
     for conversation in conversations:
         conversation.unread_count = conversation.messages.filter(
             is_read=False
         ).exclude(sender=user).count()
-    
+
     context = {
         'conversations': conversations,
         'user_type': user.user_type,
     }
-    
+
     return render(request, 'profiles/conversations_list.html', context)
 
 @login_required
 def conversation_detail(request, conversation_id):
     """View a specific conversation and its messages"""
     conversation = get_object_or_404(Conversation, id=conversation_id, is_active=True)
-    
+
     # Check if user is part of this conversation
     if request.user not in [conversation.recruiter, conversation.job_seeker]:
         messages.error(request, 'You do not have permission to view this conversation.')
         return redirect('conversations_list')
-    
+
     # Get all messages in this conversation
     messages_list = conversation.messages.select_related('sender').order_by('created_at')
-    
+
     # Mark messages as read (except user's own messages)
     for message in messages_list:
         if message.sender != request.user and not message.is_read:
             message.mark_as_read()
-    
+
     # Handle new message
     if request.method == 'POST':
         form = MessageForm(request.POST)
@@ -1170,25 +1161,25 @@ def conversation_detail(request, conversation_id):
             message.conversation = conversation
             message.sender = request.user
             message.save()
-            
+
             # Update conversation timestamp
             conversation.updated_at = timezone.now()
             conversation.save(update_fields=['updated_at'])
-            
+
             messages.success(request, 'Message sent successfully!')
             return redirect('conversation_detail', conversation_id=conversation.id)
     else:
         form = MessageForm()
-    
+
     other_participant = conversation.get_other_participant(request.user)
-    
+
     context = {
         'conversation': conversation,
         'messages_list': messages_list,
         'other_participant': other_participant,
         'form': form,
     }
-    
+
     return render(request, 'profiles/conversation_detail.html', context)
 
 @login_required
@@ -1197,23 +1188,23 @@ def start_conversation(request, user_id):
     if request.user.user_type != 'recruiter':
         messages.error(request, 'Only recruiters can start conversations.')
         return redirect('home')
-    
+
     other_user = get_object_or_404(CustomUser, id=user_id)
-    
+
     if other_user.user_type != 'job_seeker':
         messages.error(request, 'You can only start conversations with job seekers.')
         return redirect('home')
-    
+
     # Check if conversation already exists
     existing_conversation = Conversation.objects.filter(
         recruiter=request.user,
         job_seeker=other_user
     ).first()
-    
+
     if existing_conversation:
         messages.info(request, 'You already have a conversation with this candidate.')
         return redirect('conversation_detail', conversation_id=existing_conversation.id)
-    
+
     if request.method == 'POST':
         form = ConversationForm(request.POST, recruiter=request.user)
         if form.is_valid():
@@ -1221,7 +1212,7 @@ def start_conversation(request, user_id):
             conversation.recruiter = request.user
             conversation.job_seeker = other_user
             conversation.save()
-            
+
             # Create initial message
             initial_message = form.cleaned_data.get('initial_message')
             if initial_message:
@@ -1230,17 +1221,17 @@ def start_conversation(request, user_id):
                     sender=request.user,
                     content=initial_message
                 )
-            
+
             messages.success(request, 'Conversation started successfully!')
             return redirect('conversation_detail', conversation_id=conversation.id)
     else:
         form = ConversationForm(recruiter=request.user)
-    
+
     context = {
         'other_user': other_user,
         'form': form,
     }
-    
+
     return render(request, 'profiles/start_conversation.html', context)
 
 @login_required
@@ -1248,22 +1239,22 @@ def start_conversation(request, user_id):
 def send_message_ajax(request, conversation_id):
     """Send a message via AJAX"""
     conversation = get_object_or_404(Conversation, id=conversation_id, is_active=True)
-    
+
     # Check if user is part of this conversation
     if request.user not in [conversation.recruiter, conversation.job_seeker]:
         return JsonResponse({'success': False, 'message': 'Unauthorized'})
-    
+
     form = MessageForm(request.POST)
     if form.is_valid():
         message = form.save(commit=False)
         message.conversation = conversation
         message.sender = request.user
         message.save()
-        
+
         # Update conversation timestamp
         conversation.updated_at = timezone.now()
         conversation.save(update_fields=['updated_at'])
-        
+
         return JsonResponse({
             'success': True,
             'message': 'Message sent successfully!',
@@ -1283,24 +1274,21 @@ def send_message_ajax(request, conversation_id):
 def mark_messages_read(request, conversation_id):
     """Mark all messages in a conversation as read"""
     conversation = get_object_or_404(Conversation, id=conversation_id, is_active=True)
-    
+
     # Check if user is part of this conversation
     if request.user not in [conversation.recruiter, conversation.job_seeker]:
         return JsonResponse({'success': False, 'message': 'Unauthorized'})
-    
+
     # Mark all unread messages as read
     unread_messages = conversation.messages.filter(
         is_read=False
     ).exclude(sender=request.user)
-    
+
     count = unread_messages.count()
     unread_messages.update(is_read=True, read_at=timezone.now())
-    
+
     return JsonResponse({
         'success': True,
         'message': f'{count} messages marked as read',
         'marked_count': count
     })
-=======
-    return render(request, 'profiles/profile_preview.html', context)
->>>>>>> 1006d701f30381b457008f6864a47881b413ab68

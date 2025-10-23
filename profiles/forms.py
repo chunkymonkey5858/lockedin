@@ -1,11 +1,7 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.forms import inlineformset_factory
-<<<<<<< HEAD
 from .models import CustomUser, JobSeekerProfile, Skill, Education, WorkExperience, Link, AdminActionLog, Conversation, Message
-=======
-from .models import CustomUser, JobSeekerProfile, Skill, Education, WorkExperience, Link, AdminActionLog
->>>>>>> 1006d701f30381b457008f6864a47881b413ab68
 
 # Universal registration form that supports both job seekers and recruiters
 class UserRegistrationForm(UserCreationForm):
@@ -346,7 +342,6 @@ class PrivacySettingsForm(forms.ModelForm):
             }),
             'anonymous_mode': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'notify_on_profile_view': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-<<<<<<< HEAD
         }
 
 class MessageForm(forms.ModelForm):
@@ -361,11 +356,11 @@ class MessageForm(forms.ModelForm):
         max_length=1000,
         help_text='Maximum 1000 characters'
     )
-    
+
     class Meta:
         model = Message
         fields = ['content']
-    
+
     def clean_content(self):
         content = self.cleaned_data.get('content')
         if content and len(content.strip()) == 0:
@@ -384,26 +379,23 @@ class ConversationForm(forms.ModelForm):
         max_length=1000,
         help_text='Maximum 1000 characters'
     )
-    
+
     class Meta:
         model = Conversation
         fields = ['job_posting']
-    
+
     def __init__(self, *args, **kwargs):
         recruiter = kwargs.pop('recruiter', None)
         super().__init__(*args, **kwargs)
-        
+
         if recruiter:
             # Only show job postings from this recruiter
             self.fields['job_posting'].queryset = recruiter.posted_jobs.filter(is_active=True)
             self.fields['job_posting'].required = False
             self.fields['job_posting'].empty_label = "Select a job (optional)"
-    
+
     def clean_initial_message(self):
         message = self.cleaned_data.get('initial_message')
         if message and len(message.strip()) == 0:
             raise forms.ValidationError('Initial message cannot be empty.')
         return message.strip()
-=======
-        }
->>>>>>> 1006d701f30381b457008f6864a47881b413ab68

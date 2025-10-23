@@ -23,12 +23,9 @@ urlpatterns = [
     path('notifications/', views.notification_history, name='notification_history'),
     path('notifications/<int:notification_id>/mark-read/', views.mark_notification_read, name='mark_notification_read'),
     path('notifications/stats/', views.notification_stats, name='notification_stats'),
-<<<<<<< HEAD
-    
+
     # Application Pipeline (Kanban Board)
     path('pipeline/', views.application_pipeline, name='application_pipeline'),
     path('pipeline/job/<int:job_id>/', views.application_pipeline, name='application_pipeline_job'),
     path('applications/<int:application_id>/update-status/', views.update_application_status_kanban, name='update_application_status_kanban'),
-=======
->>>>>>> 1006d701f30381b457008f6864a47881b413ab68
 ]

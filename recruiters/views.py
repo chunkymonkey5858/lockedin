@@ -6,11 +6,7 @@ from django.db.models import Q, Count
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from profiles.models import JobSeekerProfile, Skill, WorkExperience, Education
-<<<<<<< HEAD
 from jobs.models import JobPosting, JobSkill, JobApplication
-=======
-from jobs.models import JobPosting, JobSkill
->>>>>>> 1006d701f30381b457008f6864a47881b413ab68
 from .models import RecruiterProfile, SavedSearch, CandidateNote, SearchNotification
 from .forms import CandidateSearchForm, SavedSearchForm, CandidateNoteForm
 
@@ -162,9 +158,9 @@ def add_candidate_note(request, candidate_id):
             if not created:
                 note.note = form.cleaned_data['note']
                 note.save()
-            
+
             messages.success(request, 'Note saved successfully!')
-            return redirect('candidate_detail', candidate_id=candidate_id)
+            return redirect('recruiters:candidate_detail', candidate_id=candidate_id)
     else:
         # Try to get existing note
         try:
@@ -212,9 +208,9 @@ def create_saved_search(request):
             search.recruiter = request.user.recruiter_profile
             search.save()
             form.save_m2m()  # Save many-to-many relationships
-            
+
             messages.success(request, 'Saved search created successfully!')
-            return redirect('saved_searches')
+            return redirect('recruiters:saved_searches')
     else:
         form = SavedSearchForm()
     
@@ -280,7 +276,7 @@ def delete_saved_search(request, search_id):
     if request.method == 'POST':
         search.delete()
         messages.success(request, 'Saved search deleted successfully!')
-        return redirect('saved_searches')
+        return redirect('recruiters:saved_searches')
     
     context = {
         'search': search,
@@ -529,8 +525,7 @@ def notification_stats(request):
             notify_on_new_matches=True
         ).count(),
     }
-    
-<<<<<<< HEAD
+
     return JsonResponse({'success': True, 'stats': stats})
 
 @login_required
@@ -539,25 +534,25 @@ def application_pipeline(request, job_id=None):
     if not hasattr(request.user, 'recruiter_profile'):
         messages.error(request, 'Only recruiters can access the application pipeline.')
         return redirect('home')
-    
+
     recruiter = request.user.recruiter_profile
-    
+
     # Get recruiter's jobs
     recruiter_jobs = JobPosting.objects.filter(
         posted_by=request.user,
         is_active=True
     ).order_by('-posted_at')
-    
+
     # If specific job is selected, get applications for that job
     selected_job = None
     applications_by_status = {}
-    
+
     if job_id:
         selected_job = get_object_or_404(JobPosting, id=job_id, posted_by=request.user)
         applications = JobApplication.objects.filter(job=selected_job).select_related(
             'applicant', 'applicant__job_seeker_profile'
         ).order_by('-applied_at')
-        
+
         # Group applications by status
         for status_value, status_label in JobApplication.APPLICATION_STATUS:
             applications_by_status[status_value] = {
@@ -571,21 +566,21 @@ def application_pipeline(request, job_id=None):
         ).select_related(
             'applicant', 'applicant__job_seeker_profile', 'job'
         ).order_by('-applied_at')
-        
+
         # Group applications by status
         for status_value, status_label in JobApplication.APPLICATION_STATUS:
             applications_by_status[status_value] = {
                 'label': status_label,
                 'applications': applications.filter(status=status_value)
             }
-    
+
     context = {
         'recruiter_jobs': recruiter_jobs,
         'selected_job': selected_job,
         'applications_by_status': applications_by_status,
         'status_choices': JobApplication.APPLICATION_STATUS,
     }
-    
+
     return render(request, 'recruiters/application_pipeline.html', context)
 
 @login_required
@@ -594,22 +589,22 @@ def update_application_status_kanban(request, application_id):
     """Update application status via AJAX for Kanban board"""
     if not hasattr(request.user, 'recruiter_profile'):
         return JsonResponse({'success': False, 'message': 'Unauthorized'})
-    
+
     try:
         application = get_object_or_404(
-            JobApplication, 
-            id=application_id, 
+            JobApplication,
+            id=application_id,
             job__posted_by=request.user
         )
-        
+
         new_status = request.POST.get('status')
         if new_status not in dict(JobApplication.APPLICATION_STATUS):
             return JsonResponse({'success': False, 'message': 'Invalid status'})
-        
+
         old_status = application.status
         application.status = new_status
         application.save()
-        
+
         # Create status history entry
         from jobs.models import ApplicationStatusHistory
         ApplicationStatusHistory.objects.create(
@@ -618,16 +613,13 @@ def update_application_status_kanban(request, application_id):
             changed_by=request.user,
             notes=f"Status changed from {dict(JobApplication.APPLICATION_STATUS)[old_status]} to {dict(JobApplication.APPLICATION_STATUS)[new_status]} via Kanban board"
         )
-        
+
         return JsonResponse({
-            'success': True, 
+            'success': True,
             'message': f'Application status updated to {dict(JobApplication.APPLICATION_STATUS)[new_status]}',
             'new_status': new_status,
             'new_status_label': dict(JobApplication.APPLICATION_STATUS)[new_status]
         })
-        
+
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)})
-=======
-    return JsonResponse({'success': True, 'stats': stats})
->>>>>>> 1006d701f30381b457008f6864a47881b413ab68

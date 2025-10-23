@@ -1,7 +1,11 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.forms import inlineformset_factory
+<<<<<<< HEAD
 from .models import CustomUser, JobSeekerProfile, Skill, Education, WorkExperience, Link, AdminActionLog, Conversation, Message
+=======
+from .models import CustomUser, JobSeekerProfile, Skill, Education, WorkExperience, Link, AdminActionLog
+>>>>>>> 1006d701f30381b457008f6864a47881b413ab68
 
 # Universal registration form that supports both job seekers and recruiters
 class UserRegistrationForm(UserCreationForm):
@@ -342,6 +346,7 @@ class PrivacySettingsForm(forms.ModelForm):
             }),
             'anonymous_mode': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'notify_on_profile_view': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+<<<<<<< HEAD
         }
 
 class MessageForm(forms.ModelForm):
@@ -399,3 +404,6 @@ class ConversationForm(forms.ModelForm):
         if message and len(message.strip()) == 0:
             raise forms.ValidationError('Initial message cannot be empty.')
         return message.strip()
+=======
+        }
+>>>>>>> 1006d701f30381b457008f6864a47881b413ab68

@@ -290,6 +290,7 @@ class PrivacySettings(models.Model):
         """Check if a company is in the blocked list"""
         blocked_list = self.get_blocked_companies_list()
         return company_name.lower() in [company.lower() for company in blocked_list]
+<<<<<<< HEAD
 
 class Conversation(models.Model):
     """Represents a conversation between a recruiter and a job seeker"""
@@ -346,3 +347,5 @@ class Message(models.Model):
             self.is_read = True
             self.read_at = timezone.now()
             self.save(update_fields=['is_read', 'read_at'])
+=======
+>>>>>>> 1006d701f30381b457008f6864a47881b413ab68

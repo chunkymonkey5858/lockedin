@@ -6,7 +6,11 @@ from django.db.models import Q, Count
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from profiles.models import JobSeekerProfile, Skill, WorkExperience, Education
+<<<<<<< HEAD
 from jobs.models import JobPosting, JobSkill, JobApplication
+=======
+from jobs.models import JobPosting, JobSkill
+>>>>>>> 1006d701f30381b457008f6864a47881b413ab68
 from .models import RecruiterProfile, SavedSearch, CandidateNote, SearchNotification
 from .forms import CandidateSearchForm, SavedSearchForm, CandidateNoteForm
 
@@ -526,6 +530,7 @@ def notification_stats(request):
         ).count(),
     }
     
+<<<<<<< HEAD
     return JsonResponse({'success': True, 'stats': stats})
 
 @login_required
@@ -623,3 +628,6 @@ def update_application_status_kanban(request, application_id):
         
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)})
+=======
+    return JsonResponse({'success': True, 'stats': stats})
+>>>>>>> 1006d701f30381b457008f6864a47881b413ab68

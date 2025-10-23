@@ -5,13 +5,21 @@ from django.contrib import messages
 from django.db import transaction, models
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
+<<<<<<< HEAD
 from django.utils import timezone
 from .models import CustomUser, JobSeekerProfile, AdminActionLog, PrivacySettings, Conversation, Message
+=======
+from .models import CustomUser, JobSeekerProfile, AdminActionLog, PrivacySettings
+>>>>>>> 1006d701f30381b457008f6864a47881b413ab68
 from .forms import (
     UserRegistrationForm, JobSeekerRegistrationForm, JobSeekerProfileForm,
     SkillFormSet, EducationFormSet, WorkExperienceFormSet, LinkFormSet,
     UserSearchForm, UserStatusUpdateForm, UserRoleUpdateForm, UserDeleteForm,
+<<<<<<< HEAD
     PrivacySettingsForm, MessageForm, ConversationForm
+=======
+    PrivacySettingsForm
+>>>>>>> 1006d701f30381b457008f6864a47881b413ab68
 )
 from jobs.models import JobPosting, JobApplication, JobCategory
 from jobs.forms import JobPostingForm, JobApplicationForm
@@ -1104,6 +1112,7 @@ def preview_profile(request):
         'is_preview': True,
     }
 
+<<<<<<< HEAD
     return render(request, 'profiles/profile_preview.html', context)
 
 # ==================== MESSAGING VIEWS ====================
@@ -1292,3 +1301,6 @@ def mark_messages_read(request, conversation_id):
         'message': f'{count} messages marked as read',
         'marked_count': count
     })
+=======
+    return render(request, 'profiles/profile_preview.html', context)
+>>>>>>> 1006d701f30381b457008f6864a47881b413ab68

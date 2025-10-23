@@ -1,0 +1,246 @@
+{% extends 'base.html' %}
+
+{% block title %}Post a Job - LockedIn{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h1 class="h3 mb-0">
+                        <i class="fas fa-plus me-2"></i>Post a New Job
+                    </h1>
+                    <p class="text-muted mb-0">Create a job posting to attract talented candidates</p>
+                </div>
+                <div class="card-body">
+                    <form method="post" id="simplePostJobForm">
+                        {% csrf_token %}
+                        <input type="hidden" name="save_action" id="save_action" value="publish">
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.title.id_for_label }}" class="form-label">Job Title *</label>
+                                {{ form.title }}
+                                {% if form.title.errors %}
+                                    <div class="text-danger small">{{ form.title.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.company.id_for_label }}" class="form-label">Company *</label>
+                                {{ form.company }}
+                                {% if form.company.errors %}
+                                    <div class="text-danger small">{{ form.company.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="{{ form.location.id_for_label }}" class="form-label">Location *</label>
+                                {{ form.location }}
+                                {% if form.location.errors %}
+                                    <div class="text-danger small">{{ form.location.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <label for="{{ form.work_location.id_for_label }}" class="form-label">Work Location *</label>
+                                {{ form.work_location }}
+                                {% if form.work_location.errors %}
+                                    <div class="text-danger small">{{ form.work_location.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <label for="{{ form.employment_type.id_for_label }}" class="form-label">Employment Type *</label>
+                                {{ form.employment_type }}
+                                {% if form.employment_type.errors %}
+                                    <div class="text-danger small">{{ form.employment_type.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.category.id_for_label }}" class="form-label">Category *</label>
+                                {{ form.category }}
+                                {% if form.category.errors %}
+                                    <div class="text-danger small">{{ form.category.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.experience_level.id_for_label }}" class="form-label">Experience Level *</label>
+                                {{ form.experience_level }}
+                                {% if form.experience_level.errors %}
+                                    <div class="text-danger small">{{ form.experience_level.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="{{ form.salary_min.id_for_label }}" class="form-label">Minimum Salary</label>
+                                {{ form.salary_min }}
+                                {% if form.salary_min.errors %}
+                                    <div class="text-danger small">{{ form.salary_min.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <label for="{{ form.salary_max.id_for_label }}" class="form-label">Maximum Salary</label>
+                                {{ form.salary_max }}
+                                {% if form.salary_max.errors %}
+                                    <div class="text-danger small">{{ form.salary_max.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <label for="{{ form.salary_period.id_for_label }}" class="form-label">Salary Period</label>
+                                {{ form.salary_period }}
+                                {% if form.salary_period.errors %}
+                                    <div class="text-danger small">{{ form.salary_period.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="{{ form.salary_currency.id_for_label }}" class="form-label">Currency</label>
+                                {{ form.salary_currency }}
+                                {% if form.salary_currency.errors %}
+                                    <div class="text-danger small">{{ form.salary_currency.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.description.id_for_label }}" class="form-label">Job Description *</label>
+                            {{ form.description }}
+                            {% if form.description.errors %}
+                                <div class="text-danger small">{{ form.description.errors.0 }}</div>
+                            {% endif %}
+                            <div class="form-text">
+                                Describe the role, responsibilities, and what makes this opportunity special.
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.requirements.id_for_label }}" class="form-label">Requirements</label>
+                            {{ form.requirements }}
+                            {% if form.requirements.errors %}
+                                <div class="text-danger small">{{ form.requirements.errors.0 }}</div>
+                            {% endif %}
+                            <div class="form-text">
+                                List the required skills, experience, and qualifications.
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.responsibilities.id_for_label }}" class="form-label">Responsibilities</label>
+                            {{ form.responsibilities }}
+                            {% if form.responsibilities.errors %}
+                                <div class="text-danger small">{{ form.responsibilities.errors.0 }}</div>
+                            {% endif %}
+                            <div class="form-text">
+                                Outline the key responsibilities and daily tasks.
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.benefits.id_for_label }}" class="form-label">Benefits & Perks</label>
+                            {{ form.benefits }}
+                            {% if form.benefits.errors %}
+                                <div class="text-danger small">{{ form.benefits.errors.0 }}</div>
+                            {% endif %}
+                            <div class="form-text">
+                                Describe benefits, perks, and what makes your company great.
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label for="{{ form.application_deadline.id_for_label }}" class="form-label">Application Deadline</label>
+                            {{ form.application_deadline }}
+                            {% if form.application_deadline.errors %}
+                                <div class="text-danger small">{{ form.application_deadline.errors.0 }}</div>
+                            {% endif %}
+                            <div class="form-text">
+                                Optional: Set a deadline for applications.
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between align-items-center">
+                            <a href="{% url 'my_job_postings' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Cancel
+                            </a>
+                            <div class="ms-auto d-flex gap-2">
+                                <button type="submit" class="btn btn-outline-secondary" name="save_action" value="save_draft" formnovalidate>
+                                    <i class="fas fa-save me-1"></i>Save as Draft
+                                </button>
+                                <button type="submit" class="btn btn-primary" id="publishBtn" name="save_action" value="publish">
+                                    <i class="fas fa-paper-plane me-2"></i>Post Job
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Tips Card -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h4 class="h5 mb-0">
+                        <i class="fas fa-lightbulb me-2"></i>Tips for a Great Job Posting
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            <strong>Be specific:</strong> Clearly define the role and responsibilities
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            <strong>Highlight benefits:</strong> Mention what makes your company special
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            <strong>List requirements clearly:</strong> Help candidates self-assess their fit
+                        </li>
+                        <li class="mb-0">
+                            <i class="fas fa-check text-success me-2"></i>
+                            <strong>Include salary range:</strong> Attract more qualified candidates
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.card {
+    border: 1px solid var(--border-color);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.card-header {
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.form-label {
+    font-weight: 600;
+    color: var(--dark-text);
+}
+
+.form-text {
+    color: var(--secondary-color);
+    font-size: 0.875rem;
+}
+</style>
+{% endblock %}
+
+{% block scripts %}{% endblock %}

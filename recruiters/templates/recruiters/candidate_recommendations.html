@@ -1,0 +1,787 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load job_extras %}
+
+{% block title %}Candidate Recommendations - LockedIn{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Cache buster v3.0 - Candidate recommendations */
+    /* Modern gradient backgrounds */
+    .recommendation-header {
+        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+        color: white;
+        padding: 3rem 0;
+        margin-bottom: 2rem;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .recommendation-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="75" cy="75" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="50" cy="10" r="0.5" fill="rgba(255,255,255,0.05)"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+        opacity: 0.3;
+    }
+    
+    .recommendation-header .container {
+        position: relative;
+        z-index: 1;
+    }
+    
+    /* Enhanced skill badges */
+    .skill-badge {
+        display: inline-block;
+        padding: 0.4rem 1rem;
+        margin: 0.3rem;
+        border-radius: 25px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        text-transform: capitalize;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .skill-badge::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+        transition: left 0.5s;
+    }
+    
+    .skill-badge:hover::before {
+        left: 100%;
+    }
+    
+    .skill-matched {
+        background: linear-gradient(135deg, #3b82f6, #2563eb);
+        color: white;
+        border: none;
+    }
+    
+    .skill-partial {
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        color: white;
+        border: none;
+    }
+    
+    .skill-missing {
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+        color: white;
+        border: none;
+    }
+    
+    /* Enhanced match percentage */
+    .match-percentage {
+        font-weight: 700;
+        padding: 0.75rem 1.25rem;
+        border-radius: 25px;
+        color: white;
+        text-align: center;
+        min-width: 80px;
+        display: inline-block;
+        font-size: 1.1rem;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .match-percentage::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(45deg, rgba(255,255,255,0.1) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.1) 75%, transparent 75%);
+        background-size: 8px 8px;
+        animation: shimmer 2s linear infinite;
+    }
+    
+    @keyframes shimmer {
+        0% { background-position: 0 0; }
+        100% { background-position: 16px 16px; }
+    }
+    
+    .match-high { 
+        background: linear-gradient(135deg, #3b82f6, #2563eb);
+        box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+    }
+    .match-medium { 
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);
+    }
+    .match-low { 
+        background: linear-gradient(135deg, #6b7280, #4b5563);
+        box-shadow: 0 4px 15px rgba(107, 114, 128, 0.4);
+    }
+    
+    /* Enhanced candidate cards */
+    .candidate-card {
+        border: none;
+        border-radius: 16px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        transition: all 0.4s ease;
+        background: linear-gradient(145deg, #ffffff, #f8fafc);
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05), 0 1px 3px rgba(0,0,0,0.1);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .candidate-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #2563eb, #3b82f6, #60a5fa, #93c5fd);
+        background-size: 400% 100%;
+        animation: gradient-shift 3s ease infinite;
+    }
+    
+    @keyframes gradient-shift {
+        0%, 100% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+    }
+    
+    .candidate-card:hover {
+        box-shadow: 0 20px 40px rgba(0,0,0,0.1), 0 8px 16px rgba(0,0,0,0.1);
+        transform: translateY(-8px) scale(1.02);
+    }
+    
+    .candidate-name {
+        color: #1e293b;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        font-size: 1.4rem;
+        line-height: 1.3;
+    }
+    
+    .candidate-headline {
+        color: #64748b;
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-bottom: 0.75rem;
+    }
+    
+    .candidate-meta {
+        color: #64748b;
+        font-size: 0.95rem;
+        margin-bottom: 1.5rem;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        align-items: center;
+    }
+    
+    .candidate-meta i {
+        color: #3b82f6;
+        width: 16px;
+    }
+    
+    .skills-section {
+        margin-top: 1.5rem;
+        padding-top: 1.5rem;
+        border-top: 2px solid #e2e8f0;
+        background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-left: -2rem;
+        margin-right: -2rem;
+        margin-bottom: -2rem;
+    }
+    
+    .skills-section h6 {
+        font-weight: 700;
+        margin-bottom: 1rem;
+        font-size: 1rem;
+    }
+    
+    /* Enhanced section dividers */
+    .section-divider {
+        border: none;
+        margin: 4rem 0;
+        padding-top: 3rem;
+        position: relative;
+    }
+    
+    .section-divider::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, #e2e8f0, transparent);
+    }
+    
+    .section-divider::after {
+        content: '';
+        position: absolute;
+        top: -3px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 200px;
+        height: 6px;
+        background: linear-gradient(90deg, #2563eb, #3b82f6, #60a5fa, #93c5fd);
+        background-size: 300% 100%;
+        border-radius: 3px;
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.5);
+        animation: gradient-flow 4s ease-in-out infinite;
+        z-index: 10;
+    }
+    
+    @keyframes gradient-flow {
+        0%, 100% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+    }
+    
+    /* Individual candidate card separators */
+    .candidate-card + .candidate-card {
+        position: relative;
+    }
+    
+    .candidate-card + .candidate-card::before {
+        content: '';
+        position: absolute;
+        top: -1rem;
+        left: 1rem;
+        right: 1rem;
+        height: 2px;
+        background: linear-gradient(90deg, transparent, #cbd5e1, transparent);
+        border-radius: 1px;
+    }
+    
+    /* Section separators within categories */
+    .recommendation-section {
+        position: relative;
+        margin-bottom: 3rem;
+    }
+    
+    .recommendation-section:not(:last-child)::after {
+        content: '';
+        position: absolute;
+        bottom: -1.5rem;
+        left: 10%;
+        right: 10%;
+        height: 2px;
+        background: linear-gradient(90deg, transparent, rgba(37, 99, 235, 0.2), transparent);
+        border-radius: 1px;
+    }
+    
+    /* Enhanced stats */
+    .recommendation-stats {
+        background: linear-gradient(135deg, #ffffff, #f8fafc);
+        border-radius: 20px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        border: 1px solid #e2e8f0;
+    }
+    
+    .stat-item {
+        text-align: center;
+        padding: 1.5rem;
+        position: relative;
+    }
+    
+    .stat-item::after {
+        content: '';
+        position: absolute;
+        right: 0;
+        top: 20%;
+        height: 60%;
+        width: 1px;
+        background: linear-gradient(to bottom, transparent, #e2e8f0, transparent);
+    }
+    
+    .stat-item:last-child::after {
+        display: none;
+    }
+    
+    .stat-number {
+        font-size: 2.5rem;
+        font-weight: 800;
+        background: linear-gradient(135deg, #2563eb, #3b82f6);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin-bottom: 0.5rem;
+    }
+    
+    .stat-label {
+        color: #64748b;
+        font-size: 0.9rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    /* Enhanced job skills display */
+    .job-skills-display {
+        background: linear-gradient(135deg, #eff6ff, #dbeafe);
+        border-radius: 16px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        border: 2px solid #3b82f6;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .job-skills-display::before {
+        content: '🎯';
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        font-size: 1.5rem;
+        opacity: 0.7;
+    }
+    
+    .job-skills-display h5 {
+        color: #1e3a8a;
+        font-weight: 700;
+        margin-bottom: 1rem;
+        font-size: 1.2rem;
+    }
+    
+    /* Enhanced buttons */
+    .btn {
+        border-radius: 12px;
+        font-weight: 600;
+        padding: 0.75rem 1.5rem;
+        transition: all 0.3s ease;
+        text-transform: none;
+        letter-spacing: 0.3px;
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #2563eb, #3b82f6);
+        border: none;
+        box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4);
+    }
+    
+    .btn-primary:hover {
+        background: linear-gradient(135deg, #1d4ed8, #2563eb);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(37, 99, 235, 0.6);
+    }
+    
+    .btn-outline-primary {
+        border: 2px solid #3b82f6;
+        color: #3b82f6;
+        background: transparent;
+    }
+    
+    .btn-outline-primary:hover {
+        background: linear-gradient(135deg, #2563eb, #3b82f6);
+        border-color: #3b82f6;
+        color: white;
+        transform: translateY(-2px);
+    }
+    
+    /* Section headers */
+    .section-header {
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        position: relative;
+    }
+    
+    .section-header h3 {
+        font-weight: 700;
+        font-size: 1.8rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .section-header.perfect-match h3 {
+        background: linear-gradient(135deg, #3b82f6, #2563eb);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+    
+    .section-header.good-match h3 {
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+    
+    .section-header.potential-match h3 {
+        background: linear-gradient(135deg, #06b6d4, #0891b2);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+    
+    /* Best job match indicator */
+    .best-job-match {
+        background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+        border-left: 4px solid #3b82f6;
+        padding: 1rem;
+        margin: 1rem 0;
+        border-radius: 0 12px 12px 0;
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+        position: relative;
+    }
+    
+    .best-job-match::before {
+        content: '🎯';
+        position: absolute;
+        top: 1rem;
+        left: -2px;
+        background: #3b82f6;
+        color: white;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.8rem;
+    }
+    
+    /* Profile picture styling */
+    .candidate-avatar {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 3px solid #3b82f6;
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    }
+    
+    .candidate-avatar-placeholder {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #3b82f6, #2563eb);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 2rem;
+        font-weight: bold;
+        border: 3px solid #3b82f6;
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    }
+    
+    /* Responsive improvements */
+    @media (max-width: 768px) {
+        .recommendation-header {
+            padding: 2rem 0;
+        }
+        
+        .candidate-card {
+            padding: 1.5rem;
+        }
+        
+        .stat-number {
+            font-size: 2rem;
+        }
+        
+        .candidate-meta {
+            flex-direction: column;
+            gap: 0.5rem;
+            align-items: flex-start;
+        }
+        
+        .skills-section {
+            margin-left: -1.5rem;
+            margin-right: -1.5rem;
+            margin-bottom: -1.5rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="recommendation-header">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="mb-3 display-4 fw-bold">
+                    <i class="fas fa-users me-3" style="color: #60a5fa;"></i>
+                    Candidate Recommendations
+                </h1>
+                <p class="mb-0 fs-4 opacity-90">
+                    {% if recommendation_type == 'personalized' %}
+                        🎯 Smart candidate matches based on your job requirements
+                    {% elif recommendation_type == 'general' %}
+                        👥 Available candidates - add skills to job postings for better matches
+                    {% else %}
+                        💼 Post job openings to get personalized candidate recommendations
+                    {% endif %}
+                </p>
+                {% if recommendation_type == 'personalized' %}
+                    <div class="mt-3">
+                        <small class="opacity-75">
+                            <i class="fas fa-chart-line me-1"></i>
+                            Smart matching across {{ recruiter_jobs|length }} job posting{{ recruiter_jobs|length|pluralize }} and {{ all_job_skills|length }} skill{{ all_job_skills|length|pluralize }}
+                        </small>
+                    </div>
+                {% endif %}
+            </div>
+            <div class="col-md-4 text-end">
+                <a href="{% url 'recruiters:search_candidates' %}" class="btn btn-outline-light">
+                    <i class="fas fa-search me-2"></i>Search Candidates
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    {% if recommendation_type == 'personalized' %}
+        <!-- Job Skills Display -->
+        <div class="job-skills-display">
+            <h5><i class="fas fa-briefcase me-2"></i>Skills Needed for Your Jobs</h5>
+            <div class="mt-2">
+                {% for skill in all_job_skills %}
+                    <span class="skill-badge skill-matched">{{ skill }}</span>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- Recommendation Statistics -->
+        <div class="recommendation-stats">
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="stat-item">
+                        <div class="stat-number">{{ high_match_candidates|length }}</div>
+                        <div class="stat-label">Perfect Match (70%+)</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-item">
+                        <div class="stat-number">{{ medium_match_candidates|length }}</div>
+                        <div class="stat-label">Good Match (40-69%)</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-item">
+                        <div class="stat-number">{{ potential_candidates|length }}</div>
+                        <div class="stat-label">Potential Hire</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-item">
+                        <div class="stat-number">{{ recruiter_jobs|length }}</div>
+                        <div class="stat-label">Your Jobs</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+    
+    {% if recommended_candidates %}
+        {% if recommendation_type == 'personalized' %}
+            <!-- High Match Candidates -->
+            {% if high_match_candidates %}
+                <div class="recommendation-section">
+                    <div class="section-header perfect-match">
+                        <h3>
+                            <i class="fas fa-star me-3"></i>Perfect Matches
+                        </h3>
+                        <p class="text-muted mb-0">Candidates with 70%+ skill match - ready to hire!</p>
+                    </div>
+                    {% for candidate in high_match_candidates %}
+                        {% include 'recruiters/candidate_recommendation_card.html' with candidate=candidate match_info=skill_match_info|get_item:candidate.id %}
+                    {% endfor %}
+                </div>
+            {% endif %}
+            
+            <!-- Medium Match Candidates -->
+            {% if medium_match_candidates %}
+                <div class="section-divider recommendation-section">
+                    <div class="section-header good-match">
+                        <h3>
+                            <i class="fas fa-thumbs-up me-3"></i>Good Matches
+                        </h3>
+                        <p class="text-muted mb-0">Candidates with 40-69% skill match - strong potential!</p>
+                    </div>
+                    {% for candidate in medium_match_candidates %}
+                        {% include 'recruiters/candidate_recommendation_card.html' with candidate=candidate match_info=skill_match_info|get_item:candidate.id %}
+                    {% endfor %}
+                </div>
+            {% endif %}
+            
+            <!-- Potential Candidates -->
+            {% if potential_candidates %}
+                <div class="section-divider recommendation-section">
+                    <div class="section-header potential-match">
+                        <h3>
+                            <i class="fas fa-seedling me-3"></i>Emerging Talent
+                        </h3>
+                        <p class="text-muted mb-0">Candidates with growth potential - consider for development roles!</p>
+                    </div>
+                    {% for candidate in potential_candidates %}
+                        {% include 'recruiters/candidate_recommendation_card.html' with candidate=candidate match_info=skill_match_info|get_item:candidate.id %}
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% else %}
+            <!-- General Recommendations -->
+            <h3 class="mb-3">
+                <i class="fas fa-users me-2"></i>Available Candidates
+            </h3>
+            {% for candidate in recommended_candidates %}
+                <div class="candidate-card">
+                    <div class="row align-items-center">
+                        <div class="col-md-2 text-center">
+                            {% if candidate.profile_picture %}
+                                <img src="{{ candidate.profile_picture.url }}" alt="{{ candidate.user.get_full_name }}" class="candidate-avatar">
+                            {% else %}
+                                <div class="candidate-avatar-placeholder">
+                                    {{ candidate.user.first_name|first|upper }}{{ candidate.user.last_name|first|upper }}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-8">
+                            <h4 class="candidate-name">{{ candidate.user.get_full_name }}</h4>
+                            <div class="candidate-headline">{{ candidate.headline }}</div>
+                            <div class="candidate-meta">
+                                {% if candidate.location %}
+                                    <div><i class="fas fa-map-marker-alt me-1"></i>{{ candidate.location }}</div>
+                                {% endif %}
+                                <div><i class="fas fa-user me-1"></i>Job Seeker</div>
+                            </div>
+                        </div>
+                        <div class="col-md-2 text-end">
+                            <a href="{% url 'recruiters:candidate_detail' candidate.id %}" class="btn btn-success">
+                                <i class="fas fa-eye me-2"></i>View Profile
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-users fa-3x mb-3 text-muted"></i>
+            <h3>No Candidate Recommendations Available</h3>
+            <p class="lead">
+                {% if recommendation_type == 'no_jobs' %}
+                    Post some job openings to get personalized candidate recommendations!
+                {% elif recommendation_type == 'general' %}
+                    Add required skills to your job postings to get better candidate matches.
+                {% else %}
+                    We couldn't find candidates matching your requirements. Try:
+                    <br>
+                    • Posting more diverse job openings
+                    <br>
+                    • Checking back later for new candidates
+                {% endif %}
+            </p>
+            <div class="mt-3">
+                <a href="{% url 'jobs:post_job' %}" class="btn btn-success me-2">
+                    <i class="fas fa-plus me-2"></i>Post New Job
+                </a>
+                <a href="{% url 'recruiters:search_candidates' %}" class="btn btn-outline-success">
+                    <i class="fas fa-search me-2"></i>Search All Candidates
+                </a>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Enhanced tooltips for skill badges
+    const skillBadges = document.querySelectorAll('.skill-badge');
+    skillBadges.forEach(badge => {
+        if (badge.classList.contains('skill-matched')) {
+            badge.title = '✅ Candidate has this skill!';
+        } else if (badge.classList.contains('skill-partial')) {
+            badge.title = '🔄 Partial match with candidate skills';
+        } else if (badge.classList.contains('skill-missing')) {
+            badge.title = '📚 Skill candidate could learn';
+        }
+    });
+    
+    // Add hover effects to candidate cards
+    const candidateCards = document.querySelectorAll('.candidate-card');
+    candidateCards.forEach(card => {
+        card.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-8px) scale(1.02)';
+        });
+        
+        card.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0) scale(1)';
+        });
+    });
+    
+    // Animate statistics on scroll
+    const observerOptions = {
+        threshold: 0.5,
+        rootMargin: '0px 0px -100px 0px'
+    };
+    
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const statNumbers = entry.target.querySelectorAll('.stat-number');
+                statNumbers.forEach(stat => {
+                    const finalValue = parseInt(stat.textContent);
+                    animateNumber(stat, 0, finalValue, 1000);
+                });
+                observer.unobserve(entry.target);
+            }
+        });
+    }, observerOptions);
+    
+    const statsSection = document.querySelector('.recommendation-stats');
+    if (statsSection) {
+        observer.observe(statsSection);
+    }
+    
+    // Number animation function
+    function animateNumber(element, start, end, duration) {
+        const startTime = performance.now();
+        
+        function updateNumber(currentTime) {
+            const elapsed = currentTime - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            
+            // Easing function for smooth animation
+            const easeOutQuart = 1 - Math.pow(1 - progress, 4);
+            const currentValue = Math.floor(start + (end - start) * easeOutQuart);
+            
+            element.textContent = currentValue;
+            
+            if (progress < 1) {
+                requestAnimationFrame(updateNumber);
+            } else {
+                element.textContent = end;
+            }
+        }
+        
+        requestAnimationFrame(updateNumber);
+    }
+    
+    // Add loading states for buttons
+    const actionButtons = document.querySelectorAll('.btn');
+    actionButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            if (this.href && !this.href.includes('#')) {
+                this.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Loading...';
+                this.disabled = true;
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

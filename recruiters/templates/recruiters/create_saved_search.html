@@ -1,0 +1,163 @@
+{% extends 'base.html' %}
+
+{% block title %}Create Saved Search{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4>
+                        <i class="fas fa-search me-2"></i>Create Saved Search
+                    </h4>
+                    <p class="mb-0 text-muted">Save your search criteria to quickly find candidates later</p>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <div class="col-md-8 mb-3">
+                                <label for="{{ form.name.id_for_label }}" class="form-label">Search Name *</label>
+                                {{ form.name }}
+                                {% if form.name.errors %}
+                                    <div class="text-danger">{{ form.name.errors.0 }}</div>
+                                {% endif %}
+                                <div class="form-text">Give your search a memorable name</div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.description.id_for_label }}" class="form-label">Description</label>
+                            {{ form.description }}
+                            {% if form.description.errors %}
+                                <div class="text-danger">{{ form.description.errors.0 }}</div>
+                            {% endif %}
+                            <div class="form-text">Optional: Describe what type of candidates you're looking for</div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.location.id_for_label }}" class="form-label">Location</label>
+                                {{ form.location }}
+                                {% if form.location.errors %}
+                                    <div class="text-danger">{{ form.location.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.experience_level.id_for_label }}" class="form-label">Experience Level</label>
+                                {{ form.experience_level }}
+                                {% if form.experience_level.errors %}
+                                    <div class="text-danger">{{ form.experience_level.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.employment_type.id_for_label }}" class="form-label">Employment Type</label>
+                            {{ form.employment_type }}
+                            {% if form.employment_type.errors %}
+                                <div class="text-danger">{{ form.employment_type.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Required Skills</label>
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Select the skills you want candidates to have. You can select multiple skills.
+                            </div>
+                            {{ form.skills }}
+                            {% if form.skills.errors %}
+                                <div class="text-danger">{{ form.skills.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Notification Settings -->
+                        <div class="card mt-4">
+                            <div class="card-header">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-bell me-2"></i>Notification Settings
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        {{ form.notify_on_new_matches }}
+                                        <label class="form-check-label" for="{{ form.notify_on_new_matches.id_for_label }}">
+                                            <strong>Get notified about new matches</strong>
+                                        </label>
+                                        {% if form.notify_on_new_matches.errors %}
+                                            <div class="text-danger">{{ form.notify_on_new_matches.errors.0 }}</div>
+                                        {% endif %}
+                                        <div class="form-text">Receive email notifications when new candidates match your search criteria</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="{{ form.notification_frequency.id_for_label }}" class="form-label">Notification Frequency</label>
+                                    {{ form.notification_frequency }}
+                                    {% if form.notification_frequency.errors %}
+                                        <div class="text-danger">{{ form.notification_frequency.errors.0 }}</div>
+                                    {% endif %}
+                                    <div class="form-text">
+                                        <strong>Immediate:</strong> Get notified as soon as new matches are found<br>
+                                        <strong>Daily:</strong> Receive a daily digest of new matches<br>
+                                        <strong>Weekly:</strong> Get a weekly summary of new matches
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'recruiters:saved_searches' %}" class="btn btn-secondary">
+                                <i class="fas fa-times me-1"></i>Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-1"></i>Save Search
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Style for skills checkboxes */
+#id_skills {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 1rem;
+    background-color: #f8f9fa;
+}
+
+#id_skills .form-check {
+    margin-bottom: 0.5rem;
+}
+
+#id_skills .form-check-input {
+    margin-top: 0.125rem;
+}
+
+#id_skills .form-check-label {
+    font-size: 0.9rem;
+    color: #495057;
+}
+
+.form-control, .form-select {
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+    padding: 0.75rem 1rem;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 0.2rem rgba(37, 99, 235, 0.25);
+}
+</style>
+{% endblock %}

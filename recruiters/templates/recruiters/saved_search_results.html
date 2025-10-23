@@ -1,0 +1,152 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ search.name }} - Search Results{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2>{{ search.name }}</h2>
+            <p class="text-muted mb-0">{{ search.description|default:"Search results" }}</p>
+        </div>
+        <div>
+            <a href="{% url 'recruiters:saved_searches' %}" class="btn btn-outline-secondary me-2">
+                <i class="fas fa-arrow-left me-1"></i>Back to Searches
+            </a>
+            <a href="{% url 'recruiters:search_candidates' %}" class="btn btn-primary">
+                <i class="fas fa-search me-1"></i>New Search
+            </a>
+        </div>
+    </div>
+    
+    <!-- Search Criteria Summary -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <h6 class="card-title">Search Criteria</h6>
+            <div class="row">
+                {% if search.location %}
+                    <div class="col-md-3">
+                        <strong>Location:</strong> {{ search.location }}
+                    </div>
+                {% endif %}
+                {% if search.experience_level %}
+                    <div class="col-md-3">
+                        <strong>Experience:</strong> {{ search.get_experience_level_display }}
+                    </div>
+                {% endif %}
+                {% if search.employment_type %}
+                    <div class="col-md-3">
+                        <strong>Type:</strong> {{ search.get_employment_type_display }}
+                    </div>
+                {% endif %}
+                {% if search.skills.exists %}
+                    <div class="col-md-3">
+                        <strong>Skills:</strong> 
+                        {% for skill in search.skills.all|slice:":2" %}
+                            {{ skill.name }}{% if not forloop.last %}, {% endif %}
+                        {% endfor %}
+                        {% if search.skills.count > 2 %}
+                            +{{ search.skills.count|add:"-2" }} more
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Results -->
+    {% if candidates %}
+        <div class="row">
+            {% for candidate in candidates %}
+                <div class="col-md-6 mb-4">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <div class="d-flex align-items-start">
+                                {% if candidate.profile_picture %}
+                                    <img src="{{ candidate.profile_picture.url }}" class="rounded-circle me-3" width="60" height="60" alt="Profile">
+                                {% else %}
+                                    <div class="bg-secondary rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+                                        <i class="fas fa-user text-white"></i>
+                                    </div>
+                                {% endif %}
+                                
+                                <div class="flex-grow-1">
+                                    <h5 class="card-title">
+                                        <a href="{% url 'recruiters:candidate_detail' candidate.id %}" class="text-decoration-none">
+                                            {{ candidate.user.get_full_name|default:candidate.user.username }}
+                                        </a>
+                                    </h5>
+                                    <h6 class="card-subtitle mb-2 text-muted">{{ candidate.headline }}</h6>
+                                    <p class="card-text">
+                                        <i class="fas fa-map-marker-alt"></i> {{ candidate.location|default:"Location not specified" }}
+                                    </p>
+                                    <p class="card-text">{{ candidate.bio|truncatewords:20 }}</p>
+                                    
+                                    <!-- Skills -->
+                                    <div class="mb-2">
+                                        {% for skill in candidate.skills.all|slice:":5" %}
+                                            <span class="badge bg-light text-dark me-1">{{ skill.name }}</span>
+                                        {% endfor %}
+                                        {% if candidate.skills.count > 5 %}
+                                            <span class="text-muted">+{{ candidate.skills.count|add:"-5" }} more</span>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <small class="text-muted">
+                                            Updated {{ candidate.updated_at|timesince }} ago
+                                        </small>
+                                        <a href="{% url 'recruiters:candidate_detail' candidate.id %}" class="btn btn-sm btn-outline-primary">
+                                            View Profile
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Pagination -->
+        {% if candidates.has_other_pages %}
+            <nav aria-label="Search results pagination">
+                <ul class="pagination justify-content-center">
+                    {% if candidates.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ candidates.previous_page_number }}">Previous</a>
+                        </li>
+                    {% endif %}
+                    
+                    {% for num in candidates.paginator.page_range %}
+                        {% if candidates.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                        {% elif num > candidates.number|add:'-3' and num < candidates.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if candidates.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ candidates.next_page_number }}">Next</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        {% endif %}
+    {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-search fa-4x text-muted mb-3"></i>
+            <h4>No candidates found</h4>
+            <p class="text-muted">Try adjusting your search criteria or create a new search.</p>
+            <a href="{% url 'recruiters:search_candidates' %}" class="btn btn-primary">
+                <i class="fas fa-search me-1"></i>Create New Search
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

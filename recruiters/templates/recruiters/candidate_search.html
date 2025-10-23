@@ -1,0 +1,159 @@
+{% extends 'base.html' %}
+
+{% block title %}Search Candidates{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-3">
+            <!-- Search Filters -->
+            <div class="card">
+                <div class="card-header">
+                    <h5>Filter Candidates</h5>
+                </div>
+                <div class="card-body">
+                    <form method="get">
+                        <div class="mb-3">
+                            <label for="search" class="form-label">Search</label>
+                            <input type="text" class="form-control" id="search" name="search" value="{{ search_query }}">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="skills" class="form-label">Skills</label>
+                            <div class="form-check">
+                                {% for skill in all_skills %}
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="skills" value="{{ skill }}" 
+                                               id="skill_{{ forloop.counter }}" 
+                                               {% if skill in selected_skills %}checked{% endif %}>
+                                        <label class="form-check-label" for="skill_{{ forloop.counter }}">
+                                            {{ skill }}
+                                        </label>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="location" class="form-label">Location</label>
+                            <input type="text" class="form-control" id="location" name="location" value="{{ selected_location }}">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="experience_level" class="form-label">Experience Level</label>
+                            <select class="form-select" id="experience_level" name="experience_level">
+                                <option value="">All Levels</option>
+                                <option value="entry" {% if selected_experience_level == 'entry' %}selected{% endif %}>Entry Level</option>
+                                <option value="mid" {% if selected_experience_level == 'mid' %}selected{% endif %}>Mid Level</option>
+                                <option value="senior" {% if selected_experience_level == 'senior' %}selected{% endif %}>Senior Level</option>
+                                <option value="executive" {% if selected_experience_level == 'executive' %}selected{% endif %}>Executive</option>
+                            </select>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary">Search</button>
+                        <a href="{% url 'recruiters:search_candidates' %}" class="btn btn-secondary">Clear</a>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-9">
+            <!-- Candidate Results -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>Search Results</h2>
+                <a href="{% url 'recruiters:create_saved_search' %}" class="btn btn-outline-primary">Save Search</a>
+            </div>
+            
+            {% if candidates %}
+                <div class="row">
+                    {% for candidate in candidates %}
+                        <div class="col-md-6 mb-4">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-start">
+                                        {% if candidate.profile_picture %}
+                                            <img src="{{ candidate.profile_picture.url }}" class="rounded-circle me-3" width="60" height="60" alt="Profile">
+                                        {% else %}
+                                            <div class="bg-secondary rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+                                                <i class="fas fa-user text-white"></i>
+                                            </div>
+                                        {% endif %}
+                                        
+                                        <div class="flex-grow-1">
+                                            <h5 class="card-title">
+                                                <a href="{% url 'recruiters:candidate_detail' candidate.id %}" class="text-decoration-none">
+                                                    {{ candidate.user.get_full_name|default:candidate.user.username }}
+                                                </a>
+                                            </h5>
+                                            <h6 class="card-subtitle mb-2 text-muted">{{ candidate.headline }}</h6>
+                                            <p class="card-text">
+                                                <i class="fas fa-map-marker-alt"></i> {{ candidate.location|default:"Location not specified" }}
+                                            </p>
+                                            <p class="card-text">{{ candidate.bio|truncatewords:20 }}</p>
+                                            
+                                            <!-- Skills -->
+                                            <div class="mb-2">
+                                                {% for skill in candidate.skills.all|slice:":5" %}
+                                                    <span class="badge bg-light text-dark me-1">{{ skill.name }}</span>
+                                                {% endfor %}
+                                                {% if candidate.skills.count > 5 %}
+                                                    <span class="text-muted">+{{ candidate.skills.count|add:"-5" }} more</span>
+                                                {% endif %}
+                                            </div>
+                                            
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <small class="text-muted">
+                                                    Updated {{ candidate.updated_at|timesince }} ago
+                                                </small>
+                                                <a href="{% url 'recruiters:candidate_detail' candidate.id %}" class="btn btn-sm btn-outline-primary">
+                                                    View Profile
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+                
+                <!-- Pagination -->
+                {% if candidates.has_other_pages %}
+                    <nav aria-label="Candidate search pagination">
+                        <ul class="pagination justify-content-center">
+                            {% if candidates.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ candidates.previous_page_number }}">Previous</a>
+                                </li>
+                            {% endif %}
+                            
+                            {% for num in candidates.paginator.page_range %}
+                                {% if candidates.number == num %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ num }}</span>
+                                    </li>
+                                {% elif num > candidates.number|add:'-3' and num < candidates.number|add:'3' %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if candidates.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ candidates.next_page_number }}">Next</a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                {% endif %}
+            {% else %}
+                <div class="text-center py-5">
+                    <h4>No candidates found</h4>
+                    <p class="text-muted">Try adjusting your search criteria.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

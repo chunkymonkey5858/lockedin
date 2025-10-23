@@ -1,0 +1,90 @@
+{% load job_extras %}
+
+<div class="candidate-card">
+    <div class="row align-items-start">
+        <div class="col-md-2 text-center">
+            {% if candidate.profile_picture %}
+                <img src="{{ candidate.profile_picture.url }}" alt="{{ candidate.user.get_full_name }}" class="candidate-avatar">
+            {% else %}
+                <div class="candidate-avatar-placeholder">
+                    {{ candidate.user.first_name|first|upper }}{{ candidate.user.last_name|first|upper }}
+                </div>
+            {% endif %}
+        </div>
+        <div class="col-md-7">
+            <h4 class="candidate-name">{{ candidate.user.get_full_name }}</h4>
+            <div class="candidate-headline">{{ candidate.headline }}</div>
+            <div class="candidate-meta">
+                {% if candidate.location %}
+                    <div><i class="fas fa-map-marker-alt me-1"></i>{{ candidate.location }}</div>
+                {% endif %}
+                <div><i class="fas fa-user me-1"></i>Job Seeker</div>
+                {% if candidate.work_experience.exists %}
+                    <div><i class="fas fa-briefcase me-1"></i>{{ candidate.work_experience.count }} experience{{ candidate.work_experience.count|pluralize }}</div>
+                {% endif %}
+            </div>
+            
+            {% if match_info.best_job_match %}
+                <div class="best-job-match">
+                    <strong>Best fit for:</strong> {{ match_info.best_job_match.title }} 
+                    <span class="badge bg-primary">{{ match_info.best_job_score }}% match</span>
+                </div>
+            {% endif %}
+            
+            {% if match_info %}
+                <div class="skills-section">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-success mb-2">
+                                <i class="fas fa-check-circle me-1"></i>Skills They Have
+                            </h6>
+                            {% for skill in match_info.matched_skills %}
+                                <span class="skill-badge skill-matched">{{ skill }}</span>
+                            {% endfor %}
+                            {% for skill in match_info.partial_matches %}
+                                <span class="skill-badge skill-partial">{{ skill }} ~</span>
+                            {% endfor %}
+                            {% if not match_info.matched_skills and not match_info.partial_matches %}
+                                <span class="text-muted">No exact matches</span>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-warning mb-2">
+                                <i class="fas fa-graduation-cap me-1"></i>Skills to Develop
+                            </h6>
+                            {% for skill in match_info.missing_skills %}
+                                <span class="skill-badge skill-missing">{{ skill }}</span>
+                            {% endfor %}
+                            {% if not match_info.missing_skills %}
+                                <span class="text-success">Has all required skills!</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+        <div class="col-md-3 text-end">
+            {% if match_info %}
+                <div class="mb-3">
+                    <div class="match-percentage 
+                        {% if match_info.match_percentage >= 70 %}match-high
+                        {% elif match_info.match_percentage >= 40 %}match-medium
+                        {% else %}match-low{% endif %}">
+                        {{ match_info.match_percentage }}%
+                    </div>
+                    <div class="small text-muted mt-1">
+                        {{ match_info.matched_skills|length|add:match_info.partial_matches|length }}/{{ match_info.total_required }} skills
+                    </div>
+                </div>
+            {% endif %}
+            <div class="d-flex flex-column gap-2">
+                <a href="{% url 'recruiters:candidate_detail' candidate.id %}" class="btn btn-outline-success">
+                    <i class="fas fa-eye me-2"></i>View Profile
+                </a>
+                <a href="{% url 'recruiters:add_candidate_note' candidate.id %}" class="btn btn-success">
+                    <i class="fas fa-sticky-note me-2"></i>Add Note
+                </a>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>New Candidate Matches</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+        .candidate-card { border: 1px solid #ddd; border-radius: 8px; padding: 15px; margin-bottom: 15px; background-color: #fff; }
+        .candidate-name { font-size: 18px; font-weight: bold; color: #2c3e50; margin-bottom: 5px; }
+        .candidate-title { color: #7f8c8d; margin-bottom: 10px; }
+        .candidate-skills { margin-bottom: 10px; }
+        .skill-tag { display: inline-block; background-color: #3498db; color: white; padding: 2px 8px; border-radius: 12px; font-size: 12px; margin-right: 5px; margin-bottom: 5px; }
+        .candidate-location { color: #7f8c8d; font-size: 14px; }
+        .view-profile-btn { background-color: #3498db; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block; margin-top: 10px; }
+        .footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 12px; color: #7f8c8d; }
+        .unsubscribe { margin-top: 15px; }
+        .unsubscribe a { color: #7f8c8d; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 New Candidate Matches</h1>
+            <p>We found <strong>{{ matches_count }}</strong> new candidates that match your saved search: <strong>{{ saved_search.name }}</strong></p>
+        </div>
+
+        {% for match in matches %}
+        <div class="candidate-card">
+            <div class="candidate-name">{{ match.candidate.user.get_full_name }}</div>
+            <div class="candidate-title">{{ match.candidate.headline|default:"No headline available" }}</div>
+            
+            {% if match.candidate.skills.all %}
+            <div class="candidate-skills">
+                {% for skill in match.candidate.skills.all|slice:":5" %}
+                    <span class="skill-tag">{{ skill.name }}</span>
+                {% endfor %}
+                {% if match.candidate.skills.count > 5 %}
+                    <span class="skill-tag">+{{ match.candidate.skills.count|add:"-5" }} more</span>
+                {% endif %}
+            </div>
+            {% endif %}
+            
+            {% if match.candidate.location %}
+            <div class="candidate-location">📍 {{ match.candidate.location }}</div>
+            {% endif %}
+            
+            <a href="{{ site_url }}/recruiters/candidates/{{ match.candidate.id }}/" class="view-profile-btn">View Full Profile</a>
+        </div>
+        {% endfor %}
+
+        <div style="text-align: center; margin-top: 30px;">
+            <a href="{{ site_url }}/recruiters/saved-searches/{{ saved_search.id }}/run/" style="background-color: #27ae60; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">
+                View All Matches
+            </a>
+        </div>
+
+        <div class="footer">
+            <p>This notification was sent because you have notifications enabled for this saved search.</p>
+            <div class="unsubscribe">
+                <a href="{{ site_url }}/recruiters/saved-searches/">Manage your saved searches</a> | 
+                <a href="{{ site_url }}/recruiters/saved-searches/{{ saved_search.id }}/">Update notification settings</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

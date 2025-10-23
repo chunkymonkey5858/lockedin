@@ -1,0 +1,512 @@
+{% extends 'base.html' %}
+
+{% block title %}Application Pipeline{% endblock %}
+
+{% block extra_css %}
+<style>
+    .kanban-board {
+        display: flex;
+        gap: 1rem;
+        overflow-x: auto;
+        padding: 1rem 0;
+        min-height: 600px;
+    }
+    
+    .kanban-column {
+        flex: 1;
+        min-width: 280px;
+        background: #f8fafc;
+        border-radius: 12px;
+        padding: 1rem;
+        border: 2px solid #e2e8f0;
+        transition: all 0.3s ease;
+    }
+    
+    .kanban-column:hover {
+        border-color: #cbd5e1;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    
+    .kanban-column-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 2px solid #e2e8f0;
+    }
+    
+    .kanban-column-title {
+        font-weight: 600;
+        font-size: 1.1rem;
+        color: var(--dark-text);
+        margin: 0;
+    }
+    
+    .kanban-column-count {
+        background: var(--primary-color);
+        color: white;
+        border-radius: 50%;
+        width: 28px;
+        height: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.875rem;
+        font-weight: 600;
+    }
+    
+    .kanban-card {
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+        cursor: move;
+    }
+    
+    .kanban-card:hover {
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.15);
+        transform: translateY(-2px);
+    }
+    
+    .kanban-card.dragging {
+        opacity: 0.5;
+        transform: rotate(5deg);
+    }
+    
+    .kanban-card-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 0.75rem;
+    }
+    
+    .kanban-card-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        margin-right: 0.75rem;
+        object-fit: cover;
+    }
+    
+    .kanban-card-avatar-placeholder {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: var(--secondary-color);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 0.75rem;
+        color: white;
+        font-size: 0.875rem;
+    }
+    
+    .kanban-card-info h6 {
+        margin: 0;
+        font-weight: 600;
+        color: var(--dark-text);
+        font-size: 0.95rem;
+    }
+    
+    .kanban-card-info small {
+        color: var(--secondary-color);
+        font-size: 0.8rem;
+    }
+    
+    .kanban-card-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 0.75rem;
+        padding-top: 0.75rem;
+        border-top: 1px solid #f1f5f9;
+    }
+    
+    .kanban-card-date {
+        font-size: 0.75rem;
+        color: var(--secondary-color);
+    }
+    
+    .kanban-card-actions {
+        display: flex;
+        gap: 0.25rem;
+    }
+    
+    .kanban-card-action {
+        padding: 0.25rem 0.5rem;
+        border: none;
+        background: transparent;
+        color: var(--secondary-color);
+        border-radius: 4px;
+        font-size: 0.75rem;
+        transition: all 0.2s ease;
+    }
+    
+    .kanban-card-action:hover {
+        background: #f1f5f9;
+        color: var(--primary-color);
+    }
+    
+    .job-selector {
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.1);
+    }
+    
+    .empty-column {
+        text-align: center;
+        padding: 2rem 1rem;
+        color: var(--secondary-color);
+    }
+    
+    .empty-column i {
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+        opacity: 0.5;
+    }
+    
+    .status-applied { border-left: 4px solid #3b82f6; }
+    .status-review { border-left: 4px solid #f59e0b; }
+    .status-interview { border-left: 4px solid #8b5cf6; }
+    .status-offer { border-left: 4px solid #10b981; }
+    .status-closed { border-left: 4px solid #6b7280; }
+    
+    .drop-zone {
+        min-height: 100px;
+        border: 2px dashed #cbd5e1;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--secondary-color);
+        font-size: 0.875rem;
+        transition: all 0.3s ease;
+    }
+    
+    .drop-zone.drag-over {
+        border-color: var(--primary-color);
+        background: rgba(37, 99, 235, 0.05);
+        color: var(--primary-color);
+    }
+    
+    @media (max-width: 768px) {
+        .kanban-board {
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .kanban-column {
+            min-width: 100%;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1><i class="fas fa-columns me-2"></i>Application Pipeline</h1>
+            <p class="text-muted mb-0">Manage your hiring process with a visual Kanban board</p>
+        </div>
+        <div>
+            <a href="{% url 'recruiters:dashboard' %}" class="btn btn-outline-secondary me-2">
+                <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
+            </a>
+            <a href="{% url 'jobs:my_jobs' %}" class="btn btn-outline-primary">
+                <i class="fas fa-list me-1"></i>View All Jobs
+            </a>
+        </div>
+    </div>
+    
+    <!-- Job Selector -->
+    <div class="job-selector">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <label for="jobSelect" class="form-label fw-bold">Filter by Job Position</label>
+                <select class="form-select" id="jobSelect" onchange="filterByJob()">
+                    <option value="">All Applications</option>
+                    {% for job in recruiter_jobs %}
+                        <option value="{{ job.id }}" {% if selected_job and selected_job.id == job.id %}selected{% endif %}>
+                            {{ job.title }} - {{ job.company }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-6">
+                {% if selected_job %}
+                    <div class="mt-3 mt-md-0">
+                        <h6 class="mb-1">{{ selected_job.title }}</h6>
+                        <small class="text-muted">{{ selected_job.company }} • {{ selected_job.location }}</small>
+                        <br>
+                        <small class="text-muted">{{ selected_job.application_count }} total applications</small>
+                    </div>
+                {% else %}
+                    <div class="mt-3 mt-md-0">
+                        <h6 class="mb-1">All Job Applications</h6>
+                        <small class="text-muted">Viewing applications from all your job postings</small>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Kanban Board -->
+    <div class="kanban-board" id="kanbanBoard">
+        {% for status_value, status_data in applications_by_status.items %}
+            <div class="kanban-column" data-status="{{ status_value }}">
+                <div class="kanban-column-header">
+                    <h5 class="kanban-column-title">{{ status_data.label }}</h5>
+                    <span class="kanban-column-count">{{ status_data.applications.count }}</span>
+                </div>
+                
+                <div class="kanban-column-content" data-status="{{ status_value }}">
+                    {% if status_data.applications %}
+                        {% for application in status_data.applications %}
+                            <div class="kanban-card status-{{ status_value }}" 
+                                 data-application-id="{{ application.id }}" 
+                                 draggable="true">
+                                <div class="kanban-card-header">
+                                    {% if application.applicant.job_seeker_profile.profile_picture %}
+                                        <img src="{{ application.applicant.job_seeker_profile.profile_picture.url }}" 
+                                             class="kanban-card-avatar" 
+                                             alt="Profile">
+                                    {% else %}
+                                        <div class="kanban-card-avatar-placeholder">
+                                            <i class="fas fa-user"></i>
+                                        </div>
+                                    {% endif %}
+                                    <div class="kanban-card-info">
+                                        <h6>{{ application.applicant.get_full_name|default:application.applicant.username }}</h6>
+                                        <small>{{ application.applicant.email }}</small>
+                                    </div>
+                                </div>
+                                
+                                {% if not selected_job %}
+                                    <div class="mb-2">
+                                        <small class="text-muted">
+                                            <i class="fas fa-briefcase me-1"></i>{{ application.job.title }}
+                                        </small>
+                                    </div>
+                                {% endif %}
+                                
+                                {% if application.cover_letter %}
+                                    <div class="mb-2">
+                                        <small class="text-muted">
+                                            <i class="fas fa-file-text me-1"></i>Has cover letter
+                                        </small>
+                                    </div>
+                                {% endif %}
+                                
+                                <div class="kanban-card-meta">
+                                    <span class="kanban-card-date">
+                                        Applied {{ application.applied_at|timesince }} ago
+                                    </span>
+                                    <div class="kanban-card-actions">
+                                        <a href="{% url 'view_public_profile' application.applicant.id %}" 
+                                           class="kanban-card-action" 
+                                           title="View Profile">
+                                            <i class="fas fa-user"></i>
+                                        </a>
+                                        <a href="{% url 'start_conversation' application.applicant.id %}" 
+                                           class="kanban-card-action" 
+                                           title="Send Message">
+                                            <i class="fas fa-comment"></i>
+                                        </a>
+                                        <a href="mailto:{{ application.applicant.email }}" 
+                                           class="kanban-card-action" 
+                                           title="Send Email">
+                                            <i class="fas fa-envelope"></i>
+                                        </a>
+                                        {% if application.resume %}
+                                            <a href="{{ application.resume.url }}" 
+                                               class="kanban-card-action" 
+                                               title="Download Resume" 
+                                               target="_blank">
+                                                <i class="fas fa-download"></i>
+                                            </a>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="empty-column">
+                            <i class="fas fa-inbox"></i>
+                            <p class="mb-0">No applications in this stage</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- CSRF Token -->
+{% csrf_token %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Drag and Drop functionality
+let draggedElement = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+    const cards = document.querySelectorAll('.kanban-card');
+    const columns = document.querySelectorAll('.kanban-column-content');
+    
+    // Add drag event listeners to cards
+    cards.forEach(card => {
+        card.addEventListener('dragstart', handleDragStart);
+        card.addEventListener('dragend', handleDragEnd);
+    });
+    
+    // Add drop event listeners to columns
+    columns.forEach(column => {
+        column.addEventListener('dragover', handleDragOver);
+        column.addEventListener('drop', handleDrop);
+        column.addEventListener('dragenter', handleDragEnter);
+        column.addEventListener('dragleave', handleDragLeave);
+    });
+});
+
+function handleDragStart(e) {
+    draggedElement = this;
+    this.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+}
+
+function handleDragEnd(e) {
+    this.classList.remove('dragging');
+    draggedElement = null;
+}
+
+function handleDragOver(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+}
+
+function handleDragEnter(e) {
+    e.preventDefault();
+    this.classList.add('drag-over');
+}
+
+function handleDragLeave(e) {
+    this.classList.remove('drag-over');
+}
+
+function handleDrop(e) {
+    e.preventDefault();
+    this.classList.remove('drag-over');
+    
+    if (draggedElement && this !== draggedElement.parentNode) {
+        const newStatus = this.dataset.status;
+        const applicationId = draggedElement.dataset.applicationId;
+        
+        // Remove empty state message if it exists
+        const emptyState = this.querySelector('.empty-column');
+        if (emptyState) {
+            emptyState.remove();
+        }
+        
+        // Move the card visually to the top
+        this.insertBefore(draggedElement, this.firstChild);
+        
+        // Update the status via AJAX
+        updateApplicationStatus(applicationId, newStatus);
+        
+        // Update column counts
+        updateColumnCounts();
+    }
+}
+
+function updateApplicationStatus(applicationId, newStatus) {
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    
+    fetch(`/recruiters/applications/${applicationId}/update-status/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': csrfToken
+        },
+        body: `status=${newStatus}`
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification(data.message, 'success');
+        } else {
+            showNotification('Error: ' + data.message, 'error');
+            // Revert the card position on error
+            location.reload();
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('An error occurred while updating the status.', 'error');
+        location.reload();
+    });
+}
+
+function updateColumnCounts() {
+    const columns = document.querySelectorAll('.kanban-column');
+    columns.forEach(column => {
+        const columnContent = column.querySelector('.kanban-column-content');
+        const cards = columnContent.querySelectorAll('.kanban-card');
+        const count = cards.length;
+        const countElement = column.querySelector('.kanban-column-count');
+        countElement.textContent = count;
+        
+        // Show empty state if no cards
+        if (count === 0) {
+            const emptyState = columnContent.querySelector('.empty-column');
+            if (!emptyState) {
+                const emptyDiv = document.createElement('div');
+                emptyDiv.className = 'empty-column';
+                emptyDiv.innerHTML = `
+                    <i class="fas fa-inbox"></i>
+                    <p class="mb-0">No applications in this stage</p>
+                `;
+                columnContent.appendChild(emptyDiv);
+            }
+        }
+    });
+}
+
+function filterByJob() {
+    const jobId = document.getElementById('jobSelect').value;
+    if (jobId) {
+        window.location.href = `/recruiters/pipeline/job/${jobId}/`;
+    } else {
+        window.location.href = '/recruiters/pipeline/';
+    }
+}
+
+function showNotification(message, type) {
+    const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+    const iconClass = type === 'success' ? 'check-circle' : 'exclamation-triangle';
+    
+    const alert = document.createElement('div');
+    alert.className = `alert ${alertClass} alert-dismissible fade show position-fixed`;
+    alert.style.cssText = 'top: 20px; right: 20px; z-index: 1050; min-width: 300px;';
+    alert.innerHTML = `
+        <i class="fas fa-${iconClass} me-2"></i>${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.body.appendChild(alert);
+    
+    // Auto-remove after 3 seconds
+    setTimeout(() => {
+        if (alert.parentNode) {
+            alert.remove();
+        }
+    }, 3000);
+}
+</script>
+{% endblock %}

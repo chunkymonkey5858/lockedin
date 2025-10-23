@@ -1,0 +1,457 @@
+{% extends 'base.html' %}
+
+{% block title %}Job Opportunities - LockedIn{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <!-- Filter Sidebar -->
+        <div class="col-lg-3 col-md-4 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-filter me-2"></i>Filter Jobs
+                    </h5>
+                    <button class="btn btn-sm btn-outline-primary d-lg-none mt-2" type="button" data-bs-toggle="collapse" data-bs-target="#filterCollapse" aria-expanded="false" aria-controls="filterCollapse">
+                        <i class="fas fa-chevron-down me-1"></i>Toggle Filters
+                    </button>
+                </div>
+                <div class="collapse d-lg-block" id="filterCollapse">
+                <div class="card-body">
+                    <form method="get">
+                        <!-- Job Title Filter -->
+                        <div class="mb-3">
+                            <label for="title" class="form-label">Job Title</label>
+                            <input type="text" class="form-control" id="title" name="title" 
+                                   value="{{ selected_title }}" placeholder="Software Engineer, Data Scientist...">
+                        </div>
+                        
+                        <!-- General Search -->
+                        <div class="mb-3">
+                            <label for="search" class="form-label">General Search</label>
+                            <input type="text" class="form-control" id="search" name="search" 
+                                   value="{{ search }}" placeholder="Company, description...">
+                        </div>
+                        
+                        <!-- Skills Filter -->
+                        <div class="mb-3">
+                            <label for="skills" class="form-label">Skills</label>
+                            <input type="text" class="form-control" id="skills" name="skills" 
+                                   value="{{ selected_skills }}" 
+                                   placeholder="Python, JavaScript, React...">
+                            <small class="form-text text-muted">Separate multiple skills with commas</small>
+                        </div>
+                        
+                        <!-- Location Filter -->
+                        <div class="mb-3">
+                            <label for="location" class="form-label">Location</label>
+                            <input type="text" class="form-control" id="location" name="location" 
+                                   value="{{ selected_location }}" placeholder="City, State...">
+                        </div>
+                        
+                        <!-- Radius Filter -->
+                        <div class="mb-3">
+                            <label for="radius" class="form-label">Search Radius (miles)</label>
+                            <select class="form-select" id="radius" name="radius">
+                                <option value="">Any distance</option>
+                                <option value="5" {% if selected_radius == "5" %}selected{% endif %}>5 miles</option>
+                                <option value="10" {% if selected_radius == "10" %}selected{% endif %}>10 miles</option>
+                                <option value="25" {% if selected_radius == "25" %}selected{% endif %}>25 miles</option>
+                                <option value="50" {% if selected_radius == "50" %}selected{% endif %}>50 miles</option>
+                                <option value="100" {% if selected_radius == "100" %}selected{% endif %}>100 miles</option>
+                            </select>
+                        </div>
+                        
+                        <!-- User Location Coordinates -->
+                        <div class="mb-3">
+                            <label for="user_lat" class="form-label">Your Latitude (optional)</label>
+                            <input type="number" step="any" class="form-control" id="user_lat" name="user_lat" 
+                                   value="{{ user_lat }}" placeholder="e.g., 40.7128">
+                            <small class="form-text text-muted">Enter your latitude for radius-based search</small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="user_lon" class="form-label">Your Longitude (optional)</label>
+                            <input type="number" step="any" class="form-control" id="user_lon" name="user_lon" 
+                                   value="{{ user_lon }}" placeholder="e.g., -74.0060">
+                            <small class="form-text text-muted">Enter your longitude for radius-based search</small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <button type="button" class="btn btn-outline-primary btn-sm" id="getLocationBtn">
+                                <i class="fas fa-map-marker-alt"></i> Get My Location
+                            </button>
+                            <small class="form-text text-muted d-block">Click to automatically detect your location</small>
+                        </div>
+                        
+                        <!-- Work Location Type -->
+                        <div class="mb-3">
+                            <label for="work_location" class="form-label">Work Location</label>
+                            <select class="form-select" id="work_location" name="work_location">
+                                <option value="">All Locations</option>
+                                {% for value, label in work_locations %}
+                                    <option value="{{ value }}" {% if selected_work_location == value %}selected{% endif %}>
+                                        {{ label }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <!-- Salary Range -->
+                        <div class="mb-3">
+                            <label class="form-label">Salary Range</label>
+                            <div class="row">
+                                <div class="col-6">
+                                    <input type="number" class="form-control" id="salary_min" name="salary_min" 
+                                           value="{{ selected_salary_min }}" placeholder="Min" min="0">
+                                </div>
+                                <div class="col-6">
+                                    <input type="number" class="form-control" id="salary_max" name="salary_max" 
+                                           value="{{ selected_salary_max }}" placeholder="Max" min="0">
+                                </div>
+                            </div>
+                            <small class="form-text text-muted">Enter salary amounts in USD (e.g., 80000 for $80,000).</small>
+                        </div>
+                        
+                        <!-- Category Filter -->
+                        <div class="mb-3">
+                            <label for="category" class="form-label">Category</label>
+                            <select class="form-select" id="category" name="category">
+                                <option value="">All Categories</option>
+                                {% for category in categories %}
+                                    <option value="{{ category.name }}" {% if selected_category == category.name %}selected{% endif %}>
+                                        {{ category.name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <!-- Employment Type -->
+                        <div class="mb-3">
+                            <label for="employment_type" class="form-label">Employment Type</label>
+                            <select class="form-select" id="employment_type" name="employment_type">
+                                <option value="">All Types</option>
+                                {% for value, label in employment_types %}
+                                    <option value="{{ value }}" {% if selected_employment_type == value %}selected{% endif %}>
+                                        {{ label }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <!-- Experience Level -->
+                        <div class="mb-3">
+                            <label for="experience_level" class="form-label">Experience Level</label>
+                            <select class="form-select" id="experience_level" name="experience_level">
+                                <option value="">All Levels</option>
+                                {% for value, label in experience_levels %}
+                                    <option value="{{ value }}" {% if selected_experience_level == value %}selected{% endif %}>
+                                        {{ label }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <!-- Visa Sponsorship -->
+                        <div class="mb-3">
+                            <label for="visa_sponsorship" class="form-label">Visa Sponsorship</label>
+                            <select class="form-select" id="visa_sponsorship" name="visa_sponsorship">
+                                <option value="">All Jobs</option>
+                                <option value="true" {% if selected_visa_sponsorship == 'true' %}selected{% endif %}>Offers Visa Sponsorship</option>
+                                <option value="false" {% if selected_visa_sponsorship == 'false' %}selected{% endif %}>No Visa Sponsorship</option>
+                            </select>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-search me-2"></i>Filter Jobs
+                            </button>
+                            <a href="{% url 'job_list' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times me-2"></i>Clear Filters
+                            </a>
+                        </div>
+                    </form>
+                </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Job Listings -->
+        <div class="col-lg-9 col-md-8">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h2 mb-0">
+                    <i class="fas fa-briefcase me-2"></i>Job Opportunities
+                    {% if jobs %}
+                        <small class="text-muted">({{ jobs.paginator.count }} found)</small>
+                    {% endif %}
+                </h1>
+                <div>
+                    <a href="{% url 'jobs:job_map' %}" class="btn btn-info me-2">
+                        <i class="fas fa-map-marked-alt me-1"></i>Map View
+                    </a>
+                    {% if user.user_type == 'recruiter' %}
+                        <a href="{% url 'post_job' %}" class="btn btn-primary">
+                            <i class="fas fa-plus me-2"></i>Post a Job
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+            
+            {% if jobs %}
+                <div class="row">
+                    {% for job in jobs %}
+                        <div class="col-lg-6 mb-4">
+                            <div class="card h-100 job-card">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start mb-3">
+                                        <div class="flex-grow-1">
+                                            <h5 class="card-title mb-1">
+                                                <a href="{% url 'job_detail' job.id %}" class="text-decoration-none">
+                                                    {{ job.title }}
+                                                </a>
+                                            </h5>
+                                            <p class="text-muted mb-1">
+                                                <i class="fas fa-building me-1"></i>{{ job.company }}
+                                            </p>
+                                            <p class="text-muted small mb-0">
+                                                <i class="fas fa-map-marker-alt me-1"></i>{{ job.location }}
+                                                <span class="ms-2">
+                                                    <i class="fas fa-home me-1"></i>{{ job.get_work_location_display }}
+                                                </span>
+                                            </p>
+                                            <p class="text-muted small mb-0">
+                                                <i class="fas fa-briefcase me-1"></i>{{ job.get_employment_type_display }}
+                                                <span class="ms-2">
+                                                    <i class="fas fa-chart-line me-1"></i>{{ job.get_experience_level_display }}
+                                                </span>
+                                                {% if job.visa_sponsorship %}
+                                                    <span class="ms-2">
+                                                        <i class="fas fa-passport me-1"></i>Visa Sponsorship
+                                                    </span>
+                                                {% endif %}
+                                            </p>
+                                        </div>
+                                        {% if user.user_type == 'job_seeker' %}
+                                            {% if job.has_applied %}
+                                                <span class="badge bg-success">
+                                                    <i class="fas fa-check me-1"></i>Applied
+                                                </span>
+                                            {% else %}
+                                                <span class="badge bg-primary">{{ job.get_employment_type_display }}</span>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="badge bg-primary">{{ job.get_employment_type_display }}</span>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <p class="card-text text-muted small mb-3">
+                                        {{ job.description|truncatewords:20 }}
+                                    </p>
+                                    
+                                    <!-- Required Skills -->
+                                    {% if job.required_skills.all %}
+                                        <div class="mb-3">
+                                            <strong class="small text-muted">Required Skills:</strong><br>
+                                            <div class="mt-1">
+                                                {% for skill in job.required_skills.all %}
+                                                    <span class="badge bg-light text-dark me-1 mb-1">{{ skill.name }}</span>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                    {% endif %}
+                                    
+                                    {% if job.salary_range %}
+                                        <p class="text-success small mb-3">
+                                            <i class="fas fa-dollar-sign me-1"></i>{{ job.salary_range }}
+                                        </p>
+                                    {% endif %}
+                                    
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <small class="text-muted">
+                                            <i class="fas fa-clock me-1"></i>{{ job.posted_at|timesince }} ago
+                                        </small>
+                                        <div>
+                                            {% if user.user_type == 'job_seeker' %}
+                                                {% if job.has_applied %}
+                                                    <a href="{% url 'job_detail' job.id %}" class="btn btn-outline-success btn-sm">
+                                                        <i class="fas fa-eye me-1"></i>View Details
+                                                    </a>
+                                                {% else %}
+                                                    <a href="{% url 'job_detail' job.id %}" class="btn btn-primary btn-sm">
+                                                        <i class="fas fa-paper-plane me-1"></i>Apply Now
+                                                    </a>
+                                                {% endif %}
+                                            {% else %}
+                                                <a href="{% url 'job_detail' job.id %}" class="btn btn-outline-primary btn-sm">
+                                                    <i class="fas fa-eye me-1"></i>View Details
+                                                </a>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+                
+                <!-- Pagination -->
+                {% if jobs.has_other_pages %}
+                    <nav aria-label="Job listings pagination" class="mt-4">
+                        <ul class="pagination justify-content-center">
+                            {% if jobs.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?{% if search %}search={{ search }}&{% endif %}{% if selected_title %}title={{ selected_title }}&{% endif %}{% if selected_category %}category={{ selected_category }}&{% endif %}{% if selected_location %}location={{ selected_location }}&{% endif %}{% if selected_employment_type %}employment_type={{ selected_employment_type }}&{% endif %}{% if selected_experience_level %}experience_level={{ selected_experience_level }}&{% endif %}{% if selected_skills %}skills={{ selected_skills }}&{% endif %}{% if selected_work_location %}work_location={{ selected_work_location }}&{% endif %}{% if selected_salary_min %}salary_min={{ selected_salary_min }}&{% endif %}{% if selected_salary_max %}salary_max={{ selected_salary_max }}&{% endif %}{% if selected_visa_sponsorship %}visa_sponsorship={{ selected_visa_sponsorship }}&{% endif %}{% if selected_radius %}radius={{ selected_radius }}&{% endif %}{% if user_lat %}user_lat={{ user_lat }}&{% endif %}{% if user_lon %}user_lon={{ user_lon }}&{% endif %}page={{ jobs.previous_page_number }}">Previous</a>
+                                </li>
+                            {% endif %}
+                            
+                            {% for num in jobs.paginator.page_range %}
+                                {% if jobs.number == num %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ num }}</span>
+                                    </li>
+                                {% elif num > jobs.number|add:'-3' and num < jobs.number|add:'3' %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?{% if search %}search={{ search }}&{% endif %}{% if selected_title %}title={{ selected_title }}&{% endif %}{% if selected_category %}category={{ selected_category }}&{% endif %}{% if selected_location %}location={{ selected_location }}&{% endif %}{% if selected_employment_type %}employment_type={{ selected_employment_type }}&{% endif %}{% if selected_experience_level %}experience_level={{ selected_experience_level }}&{% endif %}{% if selected_skills %}skills={{ selected_skills }}&{% endif %}{% if selected_work_location %}work_location={{ selected_work_location }}&{% endif %}{% if selected_salary_min %}salary_min={{ selected_salary_min }}&{% endif %}{% if selected_salary_max %}salary_max={{ selected_salary_max }}&{% endif %}{% if selected_visa_sponsorship %}visa_sponsorship={{ selected_visa_sponsorship }}&{% endif %}{% if selected_radius %}radius={{ selected_radius }}&{% endif %}{% if user_lat %}user_lat={{ user_lat }}&{% endif %}{% if user_lon %}user_lon={{ user_lon }}&{% endif %}page={{ num }}">{{ num }}</a>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if jobs.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?{% if search %}search={{ search }}&{% endif %}{% if selected_title %}title={{ selected_title }}&{% endif %}{% if selected_category %}category={{ selected_category }}&{% endif %}{% if selected_location %}location={{ selected_location }}&{% endif %}{% if selected_employment_type %}employment_type={{ selected_employment_type }}&{% endif %}{% if selected_experience_level %}experience_level={{ selected_experience_level }}&{% endif %}{% if selected_skills %}skills={{ selected_skills }}&{% endif %}{% if selected_work_location %}work_location={{ selected_work_location }}&{% endif %}{% if selected_salary_min %}salary_min={{ selected_salary_min }}&{% endif %}{% if selected_salary_max %}salary_max={{ selected_salary_max }}&{% endif %}{% if selected_visa_sponsorship %}visa_sponsorship={{ selected_visa_sponsorship }}&{% endif %}{% if selected_radius %}radius={{ selected_radius }}&{% endif %}{% if user_lat %}user_lat={{ user_lat }}&{% endif %}{% if user_lon %}user_lon={{ user_lon }}&{% endif %}page={{ jobs.next_page_number }}">Next</a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                {% endif %}
+            {% else %}
+                <div class="text-center py-5">
+                    <div class="mb-4">
+                        <i class="fas fa-search text-muted" style="font-size: 4rem;"></i>
+                    </div>
+                    <h3 class="text-muted">No Jobs Found</h3>
+                    <p class="text-muted">Try adjusting your search criteria or filters.</p>
+                    <a href="{% url 'job_list' %}" class="btn btn-primary">
+                        <i class="fas fa-refresh me-2"></i>Clear Filters
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.job-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    border: 1px solid var(--border-color);
+    margin-bottom: 1.5rem;
+}
+
+.job-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+.job-card .card-title a {
+    color: var(--dark-text);
+    transition: color 0.2s ease;
+}
+
+.job-card .card-title a:hover {
+    color: var(--primary-color);
+}
+
+.job-card .card-body {
+    padding: 1.5rem;
+}
+
+.job-card .card-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    line-height: 1.3;
+}
+
+.job-card .card-text {
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+.job-card .badge {
+    font-size: 0.75rem;
+    padding: 0.4em 0.6em;
+}
+
+/* Improved spacing for job listings */
+.row {
+    margin-left: -0.75rem;
+    margin-right: -0.75rem;
+}
+
+.row > [class*="col-"] {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+}
+
+/* Filter sidebar improvements */
+.card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.form-label {
+    font-weight: 500;
+    color: #495057;
+}
+
+/* Responsive adjustments */
+@media (max-width: 991.98px) {
+    .job-card .card-body {
+        padding: 1.25rem;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .job-card .card-body {
+        padding: 1rem;
+    }
+    
+    .job-card .card-title {
+        font-size: 1rem;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const getLocationBtn = document.getElementById('getLocationBtn');
+    const latInput = document.getElementById('user_lat');
+    const lonInput = document.getElementById('user_lon');
+    
+    if (getLocationBtn) {
+        getLocationBtn.addEventListener('click', function() {
+            if (navigator.geolocation) {
+                getLocationBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Getting location...';
+                getLocationBtn.disabled = true;
+                
+                navigator.geolocation.getCurrentPosition(
+                    function(position) {
+                        latInput.value = position.coords.latitude.toFixed(6);
+                        lonInput.value = position.coords.longitude.toFixed(6);
+                        getLocationBtn.innerHTML = '<i class="fas fa-map-marker-alt"></i> Get My Location';
+                        getLocationBtn.disabled = false;
+                    },
+                    function(error) {
+                        alert('Unable to get your location. Please enter coordinates manually.');
+                        getLocationBtn.innerHTML = '<i class="fas fa-map-marker-alt"></i> Get My Location';
+                        getLocationBtn.disabled = false;
+                    }
+                );
+            } else {
+                alert('Geolocation is not supported by this browser.');
+            }
+        });
+    }
+});
+</script>
+{% endblock %}
+

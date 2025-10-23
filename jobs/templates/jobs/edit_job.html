@@ -1,0 +1,614 @@
+{% extends 'base.html' %}
+
+{% block title %}Edit Job - {{ job.title }}{% endblock %}
+
+{% block content %}
+<style>
+    .job-post-container {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 2rem 0;
+    }
+
+    .job-post-card {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        overflow: hidden;
+        margin: 0 auto;
+        max-width: 900px;
+    }
+
+    .job-post-header {
+        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+        color: white;
+        padding: 2rem;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .job-post-header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: repeating-linear-gradient(
+            45deg,
+            transparent,
+            transparent 10px,
+            rgba(255,255,255,0.05) 10px,
+            rgba(255,255,255,0.05) 20px
+        );
+        animation: slide 20s linear infinite;
+    }
+
+    @keyframes slide {
+        0% { transform: translateX(-50px); }
+        100% { transform: translateX(50px); }
+    }
+
+    .job-post-header h1 {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        position: relative;
+        z-index: 2;
+    }
+
+    .job-post-header p {
+        font-size: 1.1rem;
+        opacity: 0.9;
+        margin: 0;
+        position: relative;
+        z-index: 2;
+    }
+
+    .form-section {
+        padding: 2rem;
+    }
+
+    .section-title {
+        display: flex;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid #e5e7eb;
+        color: #374151;
+        font-weight: 600;
+        font-size: 1.2rem;
+    }
+
+    .section-title i {
+        background: linear-gradient(135deg, #2563eb, #7c3aed);
+        color: white;
+        width: 35px;
+        height: 35px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 1rem;
+        font-size: 0.9rem;
+    }
+
+    .form-control,
+    .form-select {
+        border: 2px solid #e5e7eb;
+        border-radius: 12px;
+        transition: all 0.3s ease;
+        background-color: #f9fafb;
+        padding: 0.875rem 1rem;
+        font-size: 1rem;
+    }
+
+    .form-control:focus,
+    .form-select:focus {
+        border-color: #2563eb;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        background-color: white;
+        transform: translateY(-2px);
+    }
+
+    .form-label {
+        color: #374151;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        font-size: 0.95rem;
+    }
+
+    textarea.form-control {
+        min-height: 120px;
+        resize: vertical;
+    }
+
+    .salary-section {
+        background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+        border-radius: 16px;
+        padding: 1.5rem;
+        margin: 1.5rem 0;
+        border: 1px solid #0ea5e9;
+    }
+
+    .skills-section {
+        background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+        border-radius: 16px;
+        padding: 1.5rem;
+        margin: 1.5rem 0;
+        border: 1px solid #22c55e;
+    }
+
+    .action-buttons {
+        padding: 2rem;
+        background: #f8fafc;
+        border-top: 1px solid #e5e7eb;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .btn-cancel {
+        background: #6b7280;
+        border: none;
+        color: white;
+        padding: 0.875rem 2rem;
+        border-radius: 12px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .btn-cancel:hover {
+        background: #4b5563;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(107, 114, 128, 0.4);
+        color: white;
+    }
+
+    .btn-post {
+        background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
+        border: none;
+        color: white;
+        padding: 0.875rem 2.5rem;
+        border-radius: 12px;
+        font-weight: 600;
+        font-size: 1.1rem;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+    }
+
+    .btn-post:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(37, 99, 235, 0.6);
+        background: linear-gradient(135deg, #1d4ed8 0%, #6d28d9 100%);
+    }
+
+    .form-text {
+        color: #6b7280;
+        font-size: 0.875rem;
+        margin-top: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
+    .error-message {
+        color: #dc2626;
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        border-radius: 8px;
+        padding: 0.5rem 0.75rem;
+        margin-top: 0.5rem;
+        font-size: 0.875rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 0.875rem;
+        margin-bottom: 1rem;
+    }
+
+    .status-badge.draft {
+        background: #fef3c7;
+        color: #92400e;
+        border: 1px solid #fbbf24;
+    }
+
+    .status-badge.published {
+        background: #d1fae5;
+        color: #065f46;
+        border: 1px solid #10b981;
+    }
+</style>
+
+<div class="job-post-container">
+    <div class="job-post-card">
+        <!-- Header -->
+        <div class="job-post-header">
+            <h1><i class="fas fa-edit me-3"></i>Edit Job Posting</h1>
+            <p>Update your job posting details</p>
+        </div>
+
+        <form method="post" id="jobPostForm">
+            {% csrf_token %}
+            <input type="hidden" name="save_action" id="save_action" value="publish">
+
+            <!-- Status Badge -->
+            <div class="form-section" style="padding-bottom: 0;">
+                <div class="status-badge {% if job.status == 'draft' %}draft{% else %}published{% endif %}">
+                    <i class="fas {% if job.status == 'draft' %}fa-file-alt{% else %}fa-check-circle{% endif %}"></i>
+                    Current Status: {{ job.get_status_display }}
+                </div>
+            </div>
+
+            <!-- Basic Information Section -->
+            <div class="form-section">
+                <div class="section-title">
+                    <i class="fas fa-info-circle"></i>
+                    <span>Basic Information</span>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-8">
+                        <div class="mb-3">
+                            <label for="{{ form.title.id_for_label }}" class="form-label">Job Title *</label>
+                            {{ form.title }}
+                            {% if form.title.errors %}
+                                <div class="error-message">
+                                    <i class="fas fa-exclamation-triangle"></i>{{ form.title.errors.0 }}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="{{ form.category.id_for_label }}" class="form-label">Category *</label>
+                            {{ form.category }}
+                            {% if form.category.errors %}
+                                <div class="error-message">
+                                    <i class="fas fa-exclamation-triangle"></i>{{ form.category.errors.0 }}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="{{ form.company.id_for_label }}" class="form-label">Company *</label>
+                            {{ form.company }}
+                            {% if form.company.errors %}
+                                <div class="error-message">
+                                    <i class="fas fa-exclamation-triangle"></i>{{ form.company.errors.0 }}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="{{ form.location.id_for_label }}" class="form-label">Location *</label>
+                            {{ form.location }}
+                            {% if form.location.errors %}
+                                <div class="error-message">
+                                    <i class="fas fa-exclamation-triangle"></i>{{ form.location.errors.0 }}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="{{ form.employment_type.id_for_label }}" class="form-label">Employment Type</label>
+                            {{ form.employment_type }}
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="{{ form.experience_level.id_for_label }}" class="form-label">Experience Level</label>
+                            {{ form.experience_level }}
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="{{ form.work_location.id_for_label }}" class="form-label">Work Location</label>
+                            {{ form.work_location }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Job Details Section -->
+            <div class="form-section">
+                <div class="section-title">
+                    <i class="fas fa-file-alt"></i>
+                    <span>Job Details</span>
+                </div>
+
+                <div class="mb-3">
+                    <label for="{{ form.description.id_for_label }}" class="form-label">Job Description *</label>
+                    {{ form.description }}
+                    {% if form.description.errors %}
+                        <div class="error-message">
+                            <i class="fas fa-exclamation-triangle"></i>{{ form.description.errors.0 }}
+                        </div>
+                    {% endif %}
+                    <div class="form-text">
+                        <i class="fas fa-lightbulb"></i>
+                        Describe the role, what the candidate will do, and what makes this opportunity exciting.
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="{{ form.requirements.id_for_label }}" class="form-label">Requirements</label>
+                            {{ form.requirements }}
+                            <div class="form-text">
+                                <i class="fas fa-check-circle"></i>
+                                List the must-have qualifications and experience.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="{{ form.responsibilities.id_for_label }}" class="form-label">Key Responsibilities</label>
+                            {{ form.responsibilities }}
+                            <div class="form-text">
+                                <i class="fas fa-tasks"></i>
+                                Outline the main duties and expectations.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="{{ form.benefits.id_for_label }}" class="form-label">Benefits & Perks</label>
+                    {{ form.benefits }}
+                    <div class="form-text">
+                        <i class="fas fa-gift"></i>
+                        Highlight what makes your company a great place to work.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Compensation Section -->
+            <div class="form-section">
+                <div class="section-title">
+                    <i class="fas fa-dollar-sign"></i>
+                    <span>Compensation</span>
+                </div>
+
+                <div class="salary-section">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.salary_min.id_for_label }}" class="form-label">Minimum Salary</label>
+                                {{ form.salary_min }}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.salary_max.id_for_label }}" class="form-label">Maximum Salary</label>
+                                {{ form.salary_max }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.salary_currency.id_for_label }}" class="form-label">Currency</label>
+                                {{ form.salary_currency }}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.salary_period.id_for_label }}" class="form-label">Salary Period</label>
+                                {{ form.salary_period }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-text">
+                        <i class="fas fa-info-circle"></i>
+                        Transparent salary ranges help attract the right candidates.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Skills & Application Section -->
+            <div class="form-section">
+                <div class="section-title">
+                    <i class="fas fa-cogs"></i>
+                    <span>Skills & Application Details</span>
+                </div>
+
+                <div class="skills-section">
+                    {% if job.required_skills.exists %}
+                        <div class="mb-3">
+                            <label class="form-label">Current Required Skills</label>
+                            <div class="mb-2">
+                                {% for skill in job.required_skills.all %}
+                                    <span class="badge bg-primary me-1 mb-1">{{ skill.name }}</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    <div class="mb-3">
+                        <label for="skills" class="form-label">Update Required Skills</label>
+                        <input type="text" class="form-control" name="skills" id="skills" placeholder="e.g., Python, React, PostgreSQL, AWS" value="{{ existing_skills }}">
+                        <div class="form-text">
+                            <i class="fas fa-tags"></i>
+                            Separate skills with commas (e.g., Python, React, PostgreSQL, AWS)
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="{{ form.application_deadline.id_for_label }}" class="form-label">Application Deadline</label>
+                    {{ form.application_deadline }}
+                    <div class="form-text">
+                        <i class="fas fa-calendar-alt"></i>
+                        Optional: Set a deadline to create urgency for applications.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="action-buttons">
+                <a href="{% url 'jobs:my_jobs' %}" class="btn-cancel">
+                    <i class="fas fa-times"></i>Cancel
+                </a>
+
+                <!-- Right-aligned controls -->
+                <div class="d-flex align-items-center gap-2 ms-auto">
+                    <button type="button" class="btn btn-outline-secondary" id="saveDraftBtn">
+                        <i class="fas fa-save me-1"></i>Save as Draft
+                    </button>
+                    <button type="button" class="btn btn-outline-primary" id="saveAndContinueBtn">
+                        <i class="fas fa-save me-1"></i>Save & Continue Editing
+                    </button>
+                    <button type="submit" class="btn-post" id="publishBtn">
+                        <i class="fas fa-check me-1"></i>{% if job.status == 'draft' %}Publish{% else %}Update & Publish{% endif %}
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('jobPostForm');
+
+    // Prevent form submission on Enter key in input fields (except textareas)
+    form.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA' && e.target.type !== 'submit') {
+            e.preventDefault();
+            return false;
+        }
+    });
+
+    // Add real-time validation feedback
+    const inputs = form.querySelectorAll('input, select, textarea');
+    inputs.forEach(input => {
+        input.addEventListener('blur', function() {
+            validateField(this);
+        });
+
+        input.addEventListener('input', function() {
+            // Clear error styling when user starts typing
+            if (this.style.borderColor === 'rgb(220, 38, 38)') {
+                this.style.borderColor = '';
+            }
+        });
+    });
+
+    // Salary field specific handling
+    const salaryFields = form.querySelectorAll('input[name="salary_min"], input[name="salary_max"]');
+    salaryFields.forEach(field => {
+        field.addEventListener('input', function() {
+            // Remove non-numeric characters except decimal point
+            let value = this.value.replace(/[^\d.]/g, '');
+            // Ensure only one decimal point
+            const parts = value.split('.');
+            if (parts.length > 2) {
+                value = parts[0] + '.' + parts.slice(1).join('');
+            }
+            this.value = value;
+        });
+    });
+
+    // Form submission validation
+    form.addEventListener('submit', function(e) {
+        let isValid = true;
+        const requiredFields = form.querySelectorAll('input[required], select[required], textarea[required]');
+
+        requiredFields.forEach(field => {
+            if (!validateField(field)) {
+                isValid = false;
+            }
+        });
+
+        // Validate salary range
+        const salaryMin = parseFloat(form.querySelector('input[name="salary_min"]').value) || 0;
+        const salaryMax = parseFloat(form.querySelector('input[name="salary_max"]').value) || 0;
+
+        if (salaryMin > 0 && salaryMax > 0 && salaryMin > salaryMax) {
+            alert('Minimum salary cannot be greater than maximum salary.');
+            isValid = false;
+        }
+
+        // If publishing, enforce validation; if saving draft, allow incomplete
+        const action = document.getElementById('save_action').value;
+        if (action !== 'save_draft' && !isValid) {
+            e.preventDefault();
+            // Scroll to first error
+            const firstError = form.querySelector('input[style*="border-color: rgb(220, 38, 38)"], select[style*="border-color: rgb(220, 38, 38)"], textarea[style*="border-color: rgb(220, 38, 38)"]');
+            if (firstError) {
+                firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                firstError.focus();
+            }
+        }
+    });
+
+    // Save Draft behavior
+    const saveDraftBtn = document.getElementById('saveDraftBtn');
+    saveDraftBtn.addEventListener('click', function() {
+        document.getElementById('save_action').value = 'save_draft';
+        // Bypass HTML5 required checks for draft
+        form.setAttribute('novalidate', 'novalidate');
+        form.submit();
+    });
+
+    // Save & Continue Editing behavior
+    const saveAndContinueBtn = document.getElementById('saveAndContinueBtn');
+    saveAndContinueBtn.addEventListener('click', function() {
+        document.getElementById('save_action').value = 'save_continue';
+        // Bypass HTML5 required checks for draft
+        form.setAttribute('novalidate', 'novalidate');
+        form.submit();
+    });
+
+    const publishBtn = document.getElementById('publishBtn');
+    publishBtn.addEventListener('click', function() {
+        document.getElementById('save_action').value = 'publish';
+    });
+
+    function validateField(field) {
+        const isRequired = field.hasAttribute('required');
+        const isEmpty = !field.value.trim();
+
+        if (isRequired && isEmpty) {
+            field.style.borderColor = '#dc2626';
+            return false;
+        } else if (!isEmpty || !isRequired) {
+            field.style.borderColor = '#22c55e';
+            return true;
+        }
+        return true;
+    }
+});
+</script>
+{% endblock %}

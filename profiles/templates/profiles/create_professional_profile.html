@@ -1,0 +1,978 @@
+<!-- templates/profiles/create_professional_profile.html -->
+{% extends 'base.html' %}
+
+{% block title %}Create Your Professional Profile - LockedIn{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="profile-creation-header text-center mb-4">
+            <h1 class="display-6 fw-bold text-primary mb-3">Create Your Professional Profile</h1>
+            <p class="lead text-muted">
+                Build your comprehensive profile in one go and let recruiters discover your potential. 
+                Complete all sections to maximize your visibility.
+            </p>
+            
+            <!-- Progress indicator -->
+            <div class="progress-steps mb-4">
+                <div class="step active" data-step="1">
+                    <i class="fas fa-user"></i>
+                    <span>Account</span>
+                </div>
+                <div class="step" data-step="2">
+                    <i class="fas fa-id-card"></i>
+                    <span>Profile</span>
+                </div>
+                <div class="step" data-step="3">
+                    <i class="fas fa-tools"></i>
+                    <span>Skills</span>
+                </div>
+                <div class="step" data-step="4">
+                    <i class="fas fa-graduation-cap"></i>
+                    <span>Education</span>
+                </div>
+                <div class="step" data-step="5">
+                    <i class="fas fa-briefcase"></i>
+                    <span>Experience</span>
+                </div>
+                <div class="step" data-step="6">
+                    <i class="fas fa-link"></i>
+                    <span>Links</span>
+                </div>
+            </div>
+        </div>
+
+        <form method="post" enctype="multipart/form-data" id="comprehensive-profile-form" novalidate>
+            {% csrf_token %}
+            
+            <!-- Step 1: Account Information -->
+            <div class="form-step active" id="step-1">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h3><i class="fas fa-user me-2"></i>Account Information</h3>
+                        <p class="mb-0 text-muted">Create your account credentials and basic information</p>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ user_form.first_name.id_for_label }}" class="form-label">First Name *</label>
+                                {{ user_form.first_name }}
+                                {% if user_form.first_name.errors %}
+                                    <div class="text-danger">{{ user_form.first_name.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ user_form.last_name.id_for_label }}" class="form-label">Last Name *</label>
+                                {{ user_form.last_name }}
+                                {% if user_form.last_name.errors %}
+                                    <div class="text-danger">{{ user_form.last_name.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ user_form.username.id_for_label }}" class="form-label">Username *</label>
+                                {{ user_form.username }}
+                                {% if user_form.username.errors %}
+                                    <div class="text-danger">{{ user_form.username.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ user_form.email.id_for_label }}" class="form-label">Email Address *</label>
+                                {{ user_form.email }}
+                                {% if user_form.email.errors %}
+                                    <div class="text-danger">{{ user_form.email.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ user_form.password1.id_for_label }}" class="form-label">Password *</label>
+                                {{ user_form.password1 }}
+                                {% if user_form.password1.errors %}
+                                    <div class="text-danger">{{ user_form.password1.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ user_form.password2.id_for_label }}" class="form-label">Confirm Password *</label>
+                                {{ user_form.password2 }}
+                                {% if user_form.password2.errors %}
+                                    <div class="text-danger">{{ user_form.password2.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- User Type Selection -->
+                        <div class="row">
+                            <div class="col-12 mb-3">
+                                <div class="user-type-selection">
+                                    <label class="form-label fw-bold">Account Type *</label>
+                                    <p class="text-muted mb-3">Choose the type of account that best describes you</p>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <div class="user-type-card" data-type="job_seeker">
+                                                <input type="radio" name="user_type" value="job_seeker" id="user_type_job_seeker" class="d-none" checked>
+                                                <label for="user_type_job_seeker" class="user-type-label">
+                                                    <div class="card h-100 border-2">
+                                                        <div class="card-body text-center">
+                                                            <div class="user-type-icon mb-3">
+                                                                <i class="fas fa-user fa-3x text-primary"></i>
+                                                            </div>
+                                                            <h5 class="card-title">Job Seeker</h5>
+                                                            <p class="card-text text-muted">
+                                                                Looking for job opportunities, want to showcase your skills and experience to recruiters
+                                                            </p>
+                                                            <div class="features">
+                                                                <small class="text-muted">
+                                                                    <i class="fas fa-check text-success me-1"></i>Create professional profile<br>
+                                                                    <i class="fas fa-check text-success me-1"></i>Apply to jobs<br>
+                                                                    <i class="fas fa-check text-success me-1"></i>Connect with recruiters
+                                                                </small>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </label>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="col-md-6 mb-3">
+                                            <div class="user-type-card" data-type="recruiter">
+                                                <input type="radio" name="user_type" value="recruiter" id="user_type_recruiter" class="d-none">
+                                                <label for="user_type_recruiter" class="user-type-label">
+                                                    <div class="card h-100 border-2">
+                                                        <div class="card-body text-center">
+                                                            <div class="user-type-icon mb-3">
+                                                                <i class="fas fa-user-tie fa-3x text-success"></i>
+                                                            </div>
+                                                            <h5 class="card-title">Recruiter</h5>
+                                                            <p class="card-text text-muted">
+                                                                Hiring for your company, want to find and connect with talented candidates
+                                                            </p>
+                                                            <div class="features">
+                                                                <small class="text-muted">
+                                                                    <i class="fas fa-check text-success me-1"></i>Post job openings<br>
+                                                                    <i class="fas fa-check text-success me-1"></i>Search candidates<br>
+                                                                    <i class="fas fa-check text-success me-1"></i>Manage applications
+                                                                </small>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 2: Professional Profile -->
+            <div class="form-step" id="step-2">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h3><i class="fas fa-id-card me-2"></i>Professional Information</h3>
+                        <p class="mb-0 text-muted">Tell recruiters about yourself and your professional brand</p>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="{{ profile_form.headline.id_for_label }}" class="form-label">Professional Headline *</label>
+                            {{ profile_form.headline }}
+                            <small class="form-text text-muted">This appears as your main professional title (e.g., "Software Developer | Python Enthusiast")</small>
+                            {% if profile_form.headline.errors %}
+                                <div class="text-danger">{{ profile_form.headline.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ profile_form.bio.id_for_label }}" class="form-label">Professional Bio</label>
+                            {{ profile_form.bio }}
+                            <small class="form-text text-muted">Share your professional story, experience, and what you're looking for</small>
+                            {% if profile_form.bio.errors %}
+                                <div class="text-danger">{{ profile_form.bio.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="{{ profile_form.location.id_for_label }}" class="form-label">Location</label>
+                                {{ profile_form.location }}
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="{{ profile_form.phone.id_for_label }}" class="form-label">Phone</label>
+                                {{ profile_form.phone }}
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="{{ profile_form.website.id_for_label }}" class="form-label">Personal Website</label>
+                                {{ profile_form.website }}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ profile_form.linkedin_url.id_for_label }}" class="form-label">LinkedIn URL</label>
+                                {{ profile_form.linkedin_url }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ profile_form.github_url.id_for_label }}" class="form-label">GitHub URL</label>
+                                {{ profile_form.github_url }}
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ profile_form.profile_picture.id_for_label }}" class="form-label">Profile Picture</label>
+                            {{ profile_form.profile_picture }}
+                            <small class="form-text text-muted">Upload a professional headshot (optional)</small>
+                        </div>
+
+                        <div class="form-check">
+                            {{ profile_form.is_public }}
+                            <label class="form-check-label" for="{{ profile_form.is_public.id_for_label }}">
+                                Make my profile visible to recruiters
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 3: Skills -->
+            <div class="form-step" id="step-3">
+                <div class="card mb-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <div>
+                            <h3><i class="fas fa-tools me-2"></i>Skills & Expertise</h3>
+                            <p class="mb-0 text-muted">Add your technical and professional skills</p>
+                        </div>
+                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="addSkill()">
+                            <i class="fas fa-plus me-1"></i>Add Skill
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div id="skills-container">
+                            {{ skill_formset.management_form }}
+                            {% for form in skill_formset %}
+                                <div class="skill-form-row row mb-3" data-form-index="{{ forloop.counter0 }}">
+                                    {% if form.id %}{{ form.id }}{% endif %}
+                                    <div class="col-md-6">
+                                        <label class="form-label">Skill Name</label>
+                                        {{ form.name }}
+                                        {% if form.name.errors %}
+                                            <div class="text-danger small">{{ form.name.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">Proficiency Level</label>
+                                        {{ form.level }}
+                                    </div>
+                                    <div class="col-md-2 d-flex align-items-end">
+                                        {% if form.DELETE %}
+                                            {{ form.DELETE }}
+                                        {% endif %}
+                                        <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeSkill(this)">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 4: Education -->
+            <div class="form-step" id="step-4">
+                <div class="card mb-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <div>
+                            <h3><i class="fas fa-graduation-cap me-2"></i>Education</h3>
+                            <p class="mb-0 text-muted">Add your educational background</p>
+                        </div>
+                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="addEducation()">
+                            <i class="fas fa-plus me-1"></i>Add Education
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div id="education-container">
+                            {{ education_formset.management_form }}
+                            {% for form in education_formset %}
+                                <div class="education-form border p-3 mb-3 rounded" data-form-index="{{ forloop.counter0 }}">
+                                    {% if form.id %}{{ form.id }}{% endif %}
+                                    <div class="row">
+                                        <div class="col-md-6 mb-2">
+                                            <label class="form-label">Institution</label>
+                                            {{ form.institution }}
+                                        </div>
+                                        <div class="col-md-6 mb-2">
+                                            <label class="form-label">Degree</label>
+                                            {{ form.degree }}
+                                        </div>
+                                        <div class="col-md-4 mb-2">
+                                            <label class="form-label">Field of Study</label>
+                                            {{ form.field_of_study }}
+                                        </div>
+                                        <div class="col-md-4 mb-2">
+                                            <label class="form-label">Start Date</label>
+                                            {{ form.start_date }}
+                                        </div>
+                                        <div class="col-md-4 mb-2">
+                                            <label class="form-label">End Date</label>
+                                            {{ form.end_date }}
+                                            <small class="text-muted d-block">Leave blank if current</small>
+                                        </div>
+                                        <div class="col-12 mb-2">
+                                            <label class="form-label">Description</label>
+                                            {{ form.description }}
+                                        </div>
+                                    </div>
+                                    <div class="d-flex justify-content-end">
+                                        {% if form.DELETE %}
+                                            {{ form.DELETE }}
+                                        {% endif %}
+                                        <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeEducation(this)">
+                                            <i class="fas fa-trash me-1"></i>Remove
+                                        </button>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 5: Work Experience -->
+            <div class="form-step" id="step-5">
+                <div class="card mb-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <div>
+                            <h3><i class="fas fa-briefcase me-2"></i>Work Experience</h3>
+                            <p class="mb-0 text-muted">Showcase your professional experience</p>
+                        </div>
+                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="addExperience()">
+                            <i class="fas fa-plus me-1"></i>Add Experience
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div id="experience-container">
+                            {{ experience_formset.management_form }}
+                            {% for form in experience_formset %}
+                                <div class="experience-form border p-3 mb-3 rounded" data-form-index="{{ forloop.counter0 }}">
+                                    {% if form.id %}{{ form.id }}{% endif %}
+                                    <div class="row">
+                                        <div class="col-md-6 mb-2">
+                                            <label class="form-label">Company</label>
+                                            {{ form.company }}
+                                        </div>
+                                        <div class="col-md-6 mb-2">
+                                            <label class="form-label">Position</label>
+                                            {{ form.position }}
+                                        </div>
+                                        <div class="col-md-4 mb-2">
+                                            <label class="form-label">Location</label>
+                                            {{ form.location }}
+                                        </div>
+                                        <div class="col-md-4 mb-2">
+                                            <label class="form-label">Start Date</label>
+                                            {{ form.start_date }}
+                                        </div>
+                                        <div class="col-md-4 mb-2">
+                                            <label class="form-label">End Date</label>
+                                            {{ form.end_date }}
+                                            <small class="text-muted d-block">Leave blank if current</small>
+                                        </div>
+                                        <div class="col-12 mb-2">
+                                            <label class="form-label">Description</label>
+                                            {{ form.description }}
+                                        </div>
+                                    </div>
+                                    <div class="d-flex justify-content-end">
+                                        {% if form.DELETE %}
+                                            {{ form.DELETE }}
+                                        {% endif %}
+                                        <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeExperience(this)">
+                                            <i class="fas fa-trash me-1"></i>Remove
+                                        </button>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 6: Professional Links -->
+            <div class="form-step" id="step-6">
+                <div class="card mb-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <div>
+                            <h3><i class="fas fa-link me-2"></i>Professional Links</h3>
+                            <p class="mb-0 text-muted">Add links to your portfolio, projects, and professional profiles</p>
+                        </div>
+                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="addLink()">
+                            <i class="fas fa-plus me-1"></i>Add Link
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div id="links-container">
+                            {{ link_formset.management_form }}
+                            {% for form in link_formset %}
+                                <div class="link-form-row row mb-3" data-form-index="{{ forloop.counter0 }}">
+                                    {% if form.id %}{{ form.id }}{% endif %}
+                                    <div class="col-md-4">
+                                        <label class="form-label">Title</label>
+                                        {{ form.title }}
+                                    </div>
+                                    <div class="col-md-5">
+                                        <label class="form-label">URL</label>
+                                        {{ form.url }}
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label">Type</label>
+                                        {{ form.link_type }}
+                                    </div>
+                                    <div class="col-md-1 d-flex align-items-end">
+                                        {% if form.DELETE %}
+                                            {{ form.DELETE }}
+                                        {% endif %}
+                                        <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeLink(this)">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Navigation Buttons -->
+            <div class="form-navigation d-flex justify-content-between align-items-center mb-4">
+                <button type="button" class="btn btn-outline-secondary" id="prev-btn" onclick="prevStep()" style="display: none;">
+                    <i class="fas fa-arrow-left me-1"></i>Previous
+                </button>
+                
+                <div class="step-info text-center">
+                    <span class="badge bg-primary fs-6" id="step-indicator">Step 1 of 6</span>
+                </div>
+                
+                <button type="button" class="btn btn-primary" id="next-btn" onclick="nextStep()">
+                    Next<i class="fas fa-arrow-right ms-1"></i>
+                </button>
+                
+                <button type="submit" class="btn btn-success btn-lg" id="submit-btn" style="display: none;">
+                    <i class="fas fa-check me-1"></i>Create Profile
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    .progress-steps {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+    
+    .step {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 0.5rem;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+        opacity: 0.5;
+    }
+    
+    .step.active {
+        opacity: 1;
+        color: var(--primary-color);
+        font-weight: 600;
+    }
+    
+    .step i {
+        font-size: 1.5rem;
+        margin-bottom: 0.25rem;
+    }
+    
+    .step span {
+        font-size: 0.875rem;
+    }
+    
+    .form-step {
+        display: none;
+    }
+    
+    .form-step.active {
+        display: block;
+    }
+    
+    /* User Type Selection Styles */
+    .user-type-card {
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .user-type-label {
+        cursor: pointer;
+        margin: 0;
+        width: 100%;
+        height: 100%;
+    }
+    
+    .user-type-card .card {
+        border-color: #dee2e6;
+        transition: all 0.3s ease;
+        height: 100%;
+    }
+    
+    .user-type-card:hover .card {
+        border-color: #007bff;
+        box-shadow: 0 4px 12px rgba(0, 123, 255, 0.15);
+        transform: translateY(-2px);
+    }
+    
+    .user-type-card input[type="radio"]:checked + label .card {
+        border-color: #007bff;
+        background-color: #f8f9ff;
+        box-shadow: 0 4px 12px rgba(0, 123, 255, 0.2);
+        transform: translateY(-1px);
+    }
+    
+    .user-type-card input[type="radio"]:checked + label .card .user-type-icon i {
+        color: #007bff !important;
+    }
+    
+    .user-type-card input[type="radio"]:checked + label .card .card-title {
+        color: #007bff;
+        font-weight: 600;
+    }
+    
+    .user-type-icon {
+        width: 80px;
+        height: 80px;
+        margin: 0 auto;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #f8f9fa;
+        border-radius: 50%;
+        transition: all 0.3s ease;
+    }
+    
+    .user-type-card:hover .user-type-icon {
+        background: #e3f2fd;
+    }
+    
+    .user-type-card input[type="radio"]:checked + label .user-type-icon {
+        background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    }
+    
+    .user-type-card input[type="radio"]:checked + label .user-type-icon i {
+        color: white !important;
+    }
+    
+    .features {
+        text-align: left;
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid #eee;
+    }
+    
+    .form-navigation {
+        position: sticky;
+        bottom: 0;
+        background: white;
+        padding: 1rem;
+        border-top: 1px solid var(--border-color);
+        margin: 0 -1rem -1rem -1rem;
+        border-radius: 0 0 12px 12px;
+        box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+    }
+    
+    .profile-creation-header {
+        background: linear-gradient(135deg, #f8fafc 0%, #e0f2fe 100%);
+        padding: 2rem;
+        border-radius: 12px;
+        margin-bottom: 2rem;
+    }
+    
+    @media (max-width: 768px) {
+        .progress-steps {
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+        
+        .step {
+            flex: 1;
+            min-width: 80px;
+        }
+        
+        .step span {
+            display: none;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// User type selection handling
+document.addEventListener('DOMContentLoaded', function() {
+    const userTypeCards = document.querySelectorAll('.user-type-card');
+    const userTypeRadios = document.querySelectorAll('input[name="user_type"]');
+    
+    // Handle user type card clicks
+    userTypeCards.forEach(card => {
+        card.addEventListener('click', function() {
+            const radioButton = card.querySelector('input[type="radio"]');
+            radioButton.checked = true;
+            
+            // Update visual state
+            userTypeCards.forEach(c => c.classList.remove('selected'));
+            card.classList.add('selected');
+            
+            // Update form behavior based on selection
+            updateFormForUserType(radioButton.value);
+        });
+    });
+    
+    // Handle radio button changes
+    userTypeRadios.forEach(radio => {
+        radio.addEventListener('change', function() {
+            updateFormForUserType(this.value);
+        });
+    });
+    
+    function updateFormForUserType(userType) {
+        // You can add logic here to show/hide different form sections
+        // based on whether user selected job_seeker or recruiter
+        console.log('User type selected:', userType);
+        
+        // For example, you might want to show different steps for recruiters
+        if (userType === 'recruiter') {
+            // Could hide job seeker specific steps or modify form flow
+            // document.querySelector('.recruiter-specific').style.display = 'block';
+        } else {
+            // Show job seeker specific steps
+            // document.querySelector('.recruiter-specific').style.display = 'none';
+        }
+    }
+    
+    // Initialize with default selection
+    const defaultSelected = document.querySelector('input[name="user_type"]:checked');
+    if (defaultSelected) {
+        updateFormForUserType(defaultSelected.value);
+    }
+    // Immediate field validation without losing input
+    const form = document.getElementById('comprehensive-profile-form');
+    const inputs = form.querySelectorAll('input, select, textarea');
+    inputs.forEach(el => {
+        el.addEventListener('input', () => {
+            if (el.checkValidity()) {
+                el.classList.remove('is-invalid');
+                el.classList.add('is-valid');
+            } else {
+                el.classList.remove('is-valid');
+            }
+        });
+        el.addEventListener('blur', () => {
+            if (!el.checkValidity()) {
+                el.classList.add('is-invalid');
+            }
+        });
+    });
+});
+
+let currentStep = 1;
+const totalSteps = 6;
+
+function updateStepIndicator() {
+    document.getElementById('step-indicator').textContent = `Step ${currentStep} of ${totalSteps}`;
+    
+    // Update progress steps
+    document.querySelectorAll('.step').forEach((step, index) => {
+        if (index + 1 === currentStep) {
+            step.classList.add('active');
+        } else {
+            step.classList.remove('active');
+        }
+    });
+    
+    // Update form steps
+    document.querySelectorAll('.form-step').forEach((step, index) => {
+        if (index + 1 === currentStep) {
+            step.classList.add('active');
+        } else {
+            step.classList.remove('active');
+        }
+    });
+    
+    // Update navigation buttons
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    const submitBtn = document.getElementById('submit-btn');
+    
+    if (currentStep === 1) {
+        prevBtn.style.display = 'none';
+    } else {
+        prevBtn.style.display = 'block';
+    }
+    
+    if (currentStep === totalSteps) {
+        nextBtn.style.display = 'none';
+        submitBtn.style.display = 'block';
+    } else {
+        nextBtn.style.display = 'block';
+        submitBtn.style.display = 'none';
+    }
+}
+
+function nextStep() {
+    const form = document.getElementById('comprehensive-profile-form');
+    // Validate required fields in current step before advancing
+    const current = document.getElementById(`step-${currentStep}`);
+    const requiredFields = current.querySelectorAll('[required]');
+    let ok = true;
+    requiredFields.forEach(f => {
+        if (!f.checkValidity()) {
+            f.classList.add('is-invalid');
+            ok = false;
+        }
+    });
+    if (!ok) return;
+    if (currentStep < totalSteps) {
+        currentStep++;
+        updateStepIndicator();
+    }
+}
+
+function prevStep() {
+    if (currentStep > 1) {
+        currentStep--;
+        updateStepIndicator();
+    }
+}
+
+// Dynamic form management functions
+function addSkill() {
+    const container = document.getElementById('skills-container');
+    const totalForms = document.querySelector('#id_skills-TOTAL_FORMS');
+    const formCount = parseInt(totalForms.value);
+    
+    const template = `
+        <div class="skill-form-row row mb-3" data-form-index="${formCount}">
+            <div class="col-md-6">
+                <label class="form-label">Skill Name</label>
+                <input type="text" name="skills-${formCount}-name" class="form-control" placeholder="e.g., Python, JavaScript, Project Management">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Proficiency Level</label>
+                <select name="skills-${formCount}-level" class="form-control">
+                    <option value="beginner">Beginner</option>
+                    <option value="intermediate" selected>Intermediate</option>
+                    <option value="advanced">Advanced</option>
+                    <option value="expert">Expert</option>
+                </select>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <input type="hidden" name="skills-${formCount}-DELETE" value="false">
+                <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeSkill(this)">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>
+    `;
+    
+    container.insertAdjacentHTML('beforeend', template);
+    totalForms.value = formCount + 1;
+}
+
+function removeSkill(button) {
+    const row = button.closest('.skill-form-row');
+    const deleteInput = row.querySelector('input[name$="-DELETE"]');
+    if (deleteInput) {
+        deleteInput.value = 'true';
+        row.style.display = 'none';
+    } else {
+        row.remove();
+    }
+}
+
+function addEducation() {
+    const container = document.getElementById('education-container');
+    const totalForms = document.querySelector('#id_education-TOTAL_FORMS');
+    const formCount = parseInt(totalForms.value);
+    
+    const template = `
+        <div class="education-form border p-3 mb-3 rounded" data-form-index="${formCount}">
+            <div class="row">
+                <div class="col-md-6 mb-2">
+                    <label class="form-label">Institution</label>
+                    <input type="text" name="education-${formCount}-institution" class="form-control" placeholder="e.g., University of California, Berkeley">
+                </div>
+                <div class="col-md-6 mb-2">
+                    <label class="form-label">Degree</label>
+                    <input type="text" name="education-${formCount}-degree" class="form-control" placeholder="e.g., Bachelor of Science">
+                </div>
+                <div class="col-md-4 mb-2">
+                    <label class="form-label">Field of Study</label>
+                    <input type="text" name="education-${formCount}-field_of_study" class="form-control" placeholder="e.g., Computer Science">
+                </div>
+                <div class="col-md-4 mb-2">
+                    <label class="form-label">Start Date</label>
+                    <input type="date" name="education-${formCount}-start_date" class="form-control">
+                </div>
+                <div class="col-md-4 mb-2">
+                    <label class="form-label">End Date</label>
+                    <input type="date" name="education-${formCount}-end_date" class="form-control">
+                    <small class="text-muted d-block">Leave blank if current</small>
+                </div>
+                <div class="col-12 mb-2">
+                    <label class="form-label">Description</label>
+                    <textarea name="education-${formCount}-description" class="form-control" rows="3" placeholder="Relevant coursework, achievements, activities..."></textarea>
+                </div>
+            </div>
+            <div class="d-flex justify-content-end">
+                <input type="hidden" name="education-${formCount}-DELETE" value="false">
+                <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeEducation(this)">
+                    <i class="fas fa-trash me-1"></i>Remove
+                </button>
+            </div>
+        </div>
+    `;
+    
+    container.insertAdjacentHTML('beforeend', template);
+    totalForms.value = formCount + 1;
+}
+
+function removeEducation(button) {
+    const form = button.closest('.education-form');
+    const deleteInput = form.querySelector('input[name$="-DELETE"]');
+    if (deleteInput) {
+        deleteInput.value = 'true';
+        form.style.display = 'none';
+    } else {
+        form.remove();
+    }
+}
+
+function addExperience() {
+    const container = document.getElementById('experience-container');
+    const totalForms = document.querySelector('#id_work_experience-TOTAL_FORMS');
+    const formCount = parseInt(totalForms.value);
+    
+    const template = `
+        <div class="experience-form border p-3 mb-3 rounded" data-form-index="${formCount}">
+            <div class="row">
+                <div class="col-md-6 mb-2">
+                    <label class="form-label">Company</label>
+                    <input type="text" name="work_experience-${formCount}-company" class="form-control" placeholder="Company Name">
+                </div>
+                <div class="col-md-6 mb-2">
+                    <label class="form-label">Position</label>
+                    <input type="text" name="work_experience-${formCount}-position" class="form-control" placeholder="Job Title">
+                </div>
+                <div class="col-md-4 mb-2">
+                    <label class="form-label">Location</label>
+                    <input type="text" name="work_experience-${formCount}-location" class="form-control" placeholder="City, State">
+                </div>
+                <div class="col-md-4 mb-2">
+                    <label class="form-label">Start Date</label>
+                    <input type="date" name="work_experience-${formCount}-start_date" class="form-control">
+                </div>
+                <div class="col-md-4 mb-2">
+                    <label class="form-label">End Date</label>
+                    <input type="date" name="work_experience-${formCount}-end_date" class="form-control">
+                    <small class="text-muted d-block">Leave blank if current</small>
+                </div>
+                <div class="col-12 mb-2">
+                    <label class="form-label">Description</label>
+                    <textarea name="work_experience-${formCount}-description" class="form-control" rows="4" placeholder="Describe your responsibilities and achievements..."></textarea>
+                </div>
+            </div>
+            <div class="d-flex justify-content-end">
+                <input type="hidden" name="work_experience-${formCount}-DELETE" value="false">
+                <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeExperience(this)">
+                    <i class="fas fa-trash me-1"></i>Remove
+                </button>
+            </div>
+        </div>
+    `;
+    
+    container.insertAdjacentHTML('beforeend', template);
+    totalForms.value = formCount + 1;
+}
+
+function removeExperience(button) {
+    const form = button.closest('.experience-form');
+    const deleteInput = form.querySelector('input[name$="-DELETE"]');
+    if (deleteInput) {
+        deleteInput.value = 'true';
+        form.style.display = 'none';
+    } else {
+        form.remove();
+    }
+}
+
+function addLink() {
+    const container = document.getElementById('links-container');
+    const totalForms = document.querySelector('#id_links-TOTAL_FORMS');
+    const formCount = parseInt(totalForms.value);
+    
+    const template = `
+        <div class="link-form-row row mb-3" data-form-index="${formCount}">
+            <div class="col-md-4">
+                <label class="form-label">Title</label>
+                <input type="text" name="links-${formCount}-title" class="form-control" placeholder="e.g., My Portfolio">
+            </div>
+            <div class="col-md-5">
+                <label class="form-label">URL</label>
+                <input type="url" name="links-${formCount}-url" class="form-control" placeholder="https://example.com">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Type</label>
+                <select name="links-${formCount}-link_type" class="form-control">
+                    <option value="portfolio">Portfolio</option>
+                    <option value="github">GitHub</option>
+                    <option value="linkedin">LinkedIn</option>
+                    <option value="website">Personal Website</option>
+                    <option value="blog">Blog</option>
+                    <option value="other">Other</option>
+                </select>
+            </div>
+            <div class="col-md-1 d-flex align-items-end">
+                <input type="hidden" name="links-${formCount}-DELETE" value="false">
+                <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeLink(this)">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>
+    `;
+    
+    container.insertAdjacentHTML('beforeend', template);
+    totalForms.value = formCount + 1;
+}
+
+function removeLink(button) {
+    const row = button.closest('.link-form-row');
+    const deleteInput = row.querySelector('input[name$="-DELETE"]');
+    if (deleteInput) {
+        deleteInput.value = 'true';
+        row.style.display = 'none';
+    } else {
+        row.remove();
+    }
+}
+
+// Initialize the form
+document.addEventListener('DOMContentLoaded', function() {
+    updateStepIndicator();
+});
+</script>
+{% endblock %}

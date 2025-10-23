@@ -1,0 +1,354 @@
+{% extends 'base.html' %}
+
+{% block title %}Job Map - LockedIn{% endblock %}
+
+{% block extra_css %}
+<style>
+    #map {
+        height: 600px;
+        width: 100%;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    .map-container {
+        position: relative;
+    }
+    
+    .map-filters {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px;
+    }
+    
+    .filter-row {
+        display: flex;
+        gap: 15px;
+        flex-wrap: wrap;
+        align-items: end;
+    }
+    
+    .filter-group {
+        flex: 1;
+        min-width: 200px;
+    }
+    
+    .job-popup {
+        max-width: 300px;
+    }
+    
+    .job-popup h6 {
+        color: #007bff;
+        margin-bottom: 5px;
+    }
+    
+    .job-popup .company {
+        color: #6c757d;
+        font-size: 0.9em;
+        margin-bottom: 8px;
+    }
+    
+    .job-popup .location {
+        color: #28a745;
+        font-size: 0.85em;
+        margin-bottom: 8px;
+    }
+    
+    .job-popup .salary {
+        color: #fd7e14;
+        font-weight: bold;
+        font-size: 0.9em;
+        margin-bottom: 8px;
+    }
+    
+    .job-popup .description {
+        font-size: 0.85em;
+        color: #6c757d;
+        margin-bottom: 10px;
+    }
+    
+    .job-popup .btn {
+        font-size: 0.8em;
+        padding: 5px 10px;
+    }
+    
+    .map-stats {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+    
+    .map-stats h5 {
+        margin-bottom: 10px;
+        color: #495057;
+    }
+    
+    .stat-item {
+        display: inline-block;
+        margin-right: 20px;
+        font-size: 0.9em;
+    }
+    
+    .stat-number {
+        font-weight: bold;
+        color: #007bff;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h2 mb-0">
+                    <i class="fas fa-map-marked-alt me-2"></i>Job Map
+                </h1>
+                <div>
+                    <a href="{% url 'jobs:job_list' %}" class="btn btn-outline-primary">
+                        <i class="fas fa-list me-2"></i>List View
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Map Statistics -->
+            <div class="map-stats">
+                <h5><i class="fas fa-chart-bar me-2"></i>Map Statistics</h5>
+                <div class="stat-item">
+                    <span class="stat-number">{{ job_markers|length }}</span> jobs shown
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number">{{ categories|length }}</span> categories
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number">{{ all_skills|length }}</span> skills
+                </div>
+            </div>
+            
+            <!-- Map Filters -->
+            <div class="map-filters">
+                <form method="get" id="mapFilterForm">
+                    <div class="filter-row">
+                        <!-- Search -->
+                        <div class="filter-group">
+                            <label for="search" class="form-label">Search</label>
+                            <input type="text" class="form-control" id="search" name="search" 
+                                   value="{{ search }}" placeholder="Job title, company...">
+                        </div>
+                        
+                        <!-- Location -->
+                        <div class="filter-group">
+                            <label for="location" class="form-label">Location</label>
+                            <input type="text" class="form-control" id="location" name="location" 
+                                   value="{{ selected_location }}" placeholder="City, State...">
+                        </div>
+                        
+                        <!-- Radius -->
+                        <div class="filter-group">
+                            <label for="radius" class="form-label">Search Radius</label>
+                            <select class="form-select" id="radius" name="radius">
+                                <option value="">Any distance</option>
+                                <option value="5" {% if selected_radius == "5" %}selected{% endif %}>5 miles</option>
+                                <option value="10" {% if selected_radius == "10" %}selected{% endif %}>10 miles</option>
+                                <option value="25" {% if selected_radius == "25" %}selected{% endif %}>25 miles</option>
+                                <option value="50" {% if selected_radius == "50" %}selected{% endif %}>50 miles</option>
+                                <option value="100" {% if selected_radius == "100" %}selected{% endif %}>100 miles</option>
+                            </select>
+                        </div>
+                        
+                        <!-- User Location -->
+                        <div class="filter-group">
+                            <label for="user_lat" class="form-label">Your Latitude</label>
+                            <input type="number" step="any" class="form-control" id="user_lat" name="user_lat" 
+                                   value="{{ user_lat }}" placeholder="e.g., 40.7128">
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label for="user_lon" class="form-label">Your Longitude</label>
+                            <input type="number" step="any" class="form-control" id="user_lon" name="user_lon" 
+                                   value="{{ user_lon }}" placeholder="e.g., -74.0060">
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label class="form-label">&nbsp;</label>
+                            <button type="button" class="btn btn-outline-primary d-block" id="getLocationBtn">
+                                <i class="fas fa-map-marker-alt"></i> Get My Location
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="filter-row mt-3">
+                        <!-- Category -->
+                        <div class="filter-group">
+                            <label for="category" class="form-label">Category</label>
+                            <select class="form-select" id="category" name="category">
+                                <option value="">All Categories</option>
+                                {% for category in categories %}
+                                    <option value="{{ category.name }}" {% if selected_category == category.name %}selected{% endif %}>
+                                        {{ category.name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <!-- Employment Type -->
+                        <div class="filter-group">
+                            <label for="employment_type" class="form-label">Employment Type</label>
+                            <select class="form-select" id="employment_type" name="employment_type">
+                                <option value="">All Types</option>
+                                {% for value, label in employment_types %}
+                                    <option value="{{ value }}" {% if selected_employment_type == value %}selected{% endif %}>
+                                        {{ label }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <!-- Experience Level -->
+                        <div class="filter-group">
+                            <label for="experience_level" class="form-label">Experience Level</label>
+                            <select class="form-select" id="experience_level" name="experience_level">
+                                <option value="">All Levels</option>
+                                {% for value, label in experience_levels %}
+                                    <option value="{{ value }}" {% if selected_experience_level == value %}selected{% endif %}>
+                                        {{ label }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <!-- Skills -->
+                        <div class="filter-group">
+                            <label for="skills" class="form-label">Skills</label>
+                            <input type="text" class="form-control" id="skills" name="skills" 
+                                   value="{{ selected_skills }}" placeholder="Python, JavaScript...">
+                        </div>
+                        
+                        <!-- Filter Button -->
+                        <div class="filter-group">
+                            <label class="form-label">&nbsp;</label>
+                            <button type="submit" class="btn btn-primary d-block">
+                                <i class="fas fa-filter"></i> Filter Map
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- Interactive Map -->
+            <div class="map-container">
+                <div id="map"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Leaflet CSS and JS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize the map centered on the US
+    const map = L.map('map').setView([39.8283, -98.5795], 4);
+    
+    // Add OpenStreetMap tiles
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+    
+    // Job markers data from Django
+    const jobMarkers = {{ job_markers|safe }};
+    
+    // Create markers for each job
+    const markers = [];
+    jobMarkers.forEach(function(job) {
+        // Create custom popup content
+        const popupContent = `
+            <div class="job-popup">
+                <h6><a href="${job.url}" target="_blank">${job.title}</a></h6>
+                <div class="company"><i class="fas fa-building"></i> ${job.company}</div>
+                <div class="location"><i class="fas fa-map-marker-alt"></i> ${job.location}</div>
+                <div class="salary"><i class="fas fa-dollar-sign"></i> ${job.salary_range}</div>
+                <div class="description">${job.description}</div>
+                <div class="mt-2">
+                    <span class="badge bg-primary me-1">${job.employment_type}</span>
+                    <span class="badge bg-secondary">${job.experience_level}</span>
+                </div>
+                <div class="mt-2">
+                    <a href="${job.url}" class="btn btn-primary btn-sm">View Details</a>
+                </div>
+            </div>
+        `;
+        
+        // Create marker
+        const marker = L.marker([job.latitude, job.longitude])
+            .bindPopup(popupContent)
+            .addTo(map);
+        
+        markers.push(marker);
+    });
+    
+    // Fit map to show all markers
+    if (markers.length > 0) {
+        const group = new L.featureGroup(markers);
+        map.fitBounds(group.getBounds().pad(0.1));
+    }
+    
+    // Location detection functionality
+    const getLocationBtn = document.getElementById('getLocationBtn');
+    const latInput = document.getElementById('user_lat');
+    const lonInput = document.getElementById('user_lon');
+    
+    if (getLocationBtn) {
+        getLocationBtn.addEventListener('click', function() {
+            if (navigator.geolocation) {
+                getLocationBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Getting location...';
+                getLocationBtn.disabled = true;
+                
+                navigator.geolocation.getCurrentPosition(
+                    function(position) {
+                        latInput.value = position.coords.latitude.toFixed(6);
+                        lonInput.value = position.coords.longitude.toFixed(6);
+                        getLocationBtn.innerHTML = '<i class="fas fa-map-marker-alt"></i> Get My Location';
+                        getLocationBtn.disabled = false;
+                        
+                        // Center map on user location
+                        map.setView([position.coords.latitude, position.coords.longitude], 10);
+                    },
+                    function(error) {
+                        alert('Unable to get your location. Please enter coordinates manually.');
+                        getLocationBtn.innerHTML = '<i class="fas fa-map-marker-alt"></i> Get My Location';
+                        getLocationBtn.disabled = false;
+                    }
+                );
+            } else {
+                alert('Geolocation is not supported by this browser.');
+            }
+        });
+    }
+    
+    // Auto-submit form when radius or location changes
+    const radiusSelect = document.getElementById('radius');
+    const latInputField = document.getElementById('user_lat');
+    const lonInputField = document.getElementById('user_lon');
+    
+    if (radiusSelect && latInputField && lonInputField) {
+        function autoSubmit() {
+            if (radiusSelect.value && latInputField.value && lonInputField.value) {
+                document.getElementById('mapFilterForm').submit();
+            }
+        }
+        
+        radiusSelect.addEventListener('change', autoSubmit);
+        latInputField.addEventListener('change', autoSubmit);
+        lonInputField.addEventListener('change', autoSubmit);
+    }
+});
+</script>
+{% endblock %}

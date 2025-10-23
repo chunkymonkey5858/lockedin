@@ -1,0 +1,265 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ candidate.user.get_full_name|default:candidate.user.username }} - Candidate Profile{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8">
+            <!-- Candidate Profile Card -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 text-center">
+                            {% if candidate.profile_picture %}
+                                <img src="{{ candidate.profile_picture.url }}" class="rounded-circle img-fluid mb-3" alt="Profile Picture" style="max-width: 150px;">
+                            {% else %}
+                                <div class="bg-secondary rounded-circle mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 150px; height: 150px;">
+                                    <i class="fas fa-user fa-4x text-white"></i>
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-9">
+                            <h2>{{ candidate.user.get_full_name|default:candidate.user.username }}</h2>
+                            <h5 class="text-muted mb-3">{{ candidate.headline|default:"Professional" }}</h5>
+                            
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <p><i class="fas fa-map-marker-alt text-muted me-2"></i>{{ candidate.location|default:"Location not specified" }}</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <p><i class="fas fa-envelope text-muted me-2"></i>{{ candidate.user.email }}</p>
+                                </div>
+                            </div>
+                            
+                            {% if candidate.phone %}
+                                <p><i class="fas fa-phone text-muted me-2"></i>{{ candidate.phone }}</p>
+                            {% endif %}
+                            
+                            <div class="d-flex gap-2 mb-3">
+                                {% if candidate.linkedin_url %}
+                                    <a href="{{ candidate.linkedin_url }}" class="btn btn-outline-primary btn-sm" target="_blank">
+                                        <i class="fab fa-linkedin me-1"></i>LinkedIn
+                                    </a>
+                                {% endif %}
+                                {% if candidate.github_url %}
+                                    <a href="{{ candidate.github_url }}" class="btn btn-outline-dark btn-sm" target="_blank">
+                                        <i class="fab fa-github me-1"></i>GitHub
+                                    </a>
+                                {% endif %}
+                                {% if candidate.website %}
+                                    <a href="{{ candidate.website }}" class="btn btn-outline-info btn-sm" target="_blank">
+                                        <i class="fas fa-globe me-1"></i>Website
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- About Section -->
+            {% if candidate.bio %}
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-user me-2"></i>About</h5>
+                    </div>
+                    <div class="card-body">
+                        <p>{{ candidate.bio|linebreaks }}</p>
+                    </div>
+                </div>
+            {% endif %}
+            
+            <!-- Skills Section -->
+            {% if candidate.skills.exists %}
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-cogs me-2"></i>Skills</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            {% for skill in candidate.skills.all %}
+                                <div class="col-md-6 mb-2">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="badge bg-primary me-2">{{ skill.name }}</span>
+                                        <small class="text-muted">{{ skill.get_level_display }}</small>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+            
+            <!-- Work Experience Section -->
+            {% if candidate.work_experience.exists %}
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-briefcase me-2"></i>Work Experience</h5>
+                    </div>
+                    <div class="card-body">
+                        {% for experience in candidate.work_experience.all %}
+                            <div class="mb-4 {% if not forloop.last %}border-bottom pb-3{% endif %}">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h6 class="mb-1">{{ experience.position }}</h6>
+                                        <p class="text-muted mb-2">{{ experience.company }} • {{ experience.location|default:"" }}</p>
+                                        <p class="small text-muted">
+                                            {{ experience.start_date|date:"M Y" }} - 
+                                            {% if experience.end_date %}
+                                                {{ experience.end_date|date:"M Y" }}
+                                            {% else %}
+                                                Present
+                                            {% endif %}
+                                        </p>
+                                    </div>
+                                    {% if experience.is_current %}
+                                        <span class="badge bg-success">Current</span>
+                                    {% endif %}
+                                </div>
+                                {% if experience.description %}
+                                    <p class="mt-2">{{ experience.description|linebreaks }}</p>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+            
+            <!-- Education Section -->
+            {% if candidate.education.exists %}
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-graduation-cap me-2"></i>Education</h5>
+                    </div>
+                    <div class="card-body">
+                        {% for education in candidate.education.all %}
+                            <div class="mb-3 {% if not forloop.last %}border-bottom pb-3{% endif %}">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h6 class="mb-1">{{ education.degree }}</h6>
+                                        <p class="text-muted mb-2">{{ education.institution }}</p>
+                                        {% if education.field_of_study %}
+                                            <p class="small text-muted">{{ education.field_of_study }}</p>
+                                        {% endif %}
+                                        <p class="small text-muted">
+                                            {{ education.start_date|date:"Y" }} - 
+                                            {% if education.end_date %}
+                                                {{ education.end_date|date:"Y" }}
+                                            {% else %}
+                                                Present
+                                            {% endif %}
+                                        </p>
+                                    </div>
+                                    {% if education.is_current %}
+                                        <span class="badge bg-info">Current</span>
+                                    {% endif %}
+                                </div>
+                                {% if education.gpa %}
+                                    <p class="small">GPA: {{ education.gpa }}</p>
+                                {% endif %}
+                                {% if education.description %}
+                                    <p class="mt-2">{{ education.description }}</p>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+            
+            <!-- Links Section -->
+            {% if candidate.links.exists %}
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-link me-2"></i>Links</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            {% for link in candidate.links.all %}
+                                <div class="col-md-6 mb-2">
+                                    <a href="{{ link.url }}" class="btn btn-outline-secondary btn-sm w-100" target="_blank">
+                                        <i class="fas fa-external-link-alt me-1"></i>{{ link.title }}
+                                    </a>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+        
+        <div class="col-md-4">
+            <!-- Recruiter Actions -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-tools me-2"></i>Recruiter Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'recruiters:add_candidate_note' candidate.id %}" class="btn btn-primary">
+                            <i class="fas fa-sticky-note me-1"></i>
+                            {% if recruiter_note %}Edit Note{% else %}Add Note{% endif %}
+                        </a>
+                        <a href="mailto:{{ candidate.user.email }}" class="btn btn-outline-primary">
+                            <i class="fas fa-envelope me-1"></i>Send Email
+                        </a>
+                        <a href="{% url 'recruiters:search_candidates' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-1"></i>Back to Search
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Recruiter Notes -->
+            {% if recruiter_note %}
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-sticky-note me-2"></i>Your Notes</h5>
+                    </div>
+                    <div class="card-body">
+                        <p>{{ recruiter_note.note|linebreaks }}</p>
+                        <small class="text-muted">
+                            Last updated {{ recruiter_note.updated_at|timesince }} ago
+                        </small>
+                    </div>
+                </div>
+            {% endif %}
+            
+            <!-- Profile Stats -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Profile Info</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <h4 class="text-primary">{{ candidate.skills.count }}</h4>
+                            <small class="text-muted">Skills</small>
+                        </div>
+                        <div class="col-6">
+                            <h4 class="text-success">{{ candidate.work_experience.count }}</h4>
+                            <small class="text-muted">Experience</small>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <h4 class="text-info">{{ candidate.education.count }}</h4>
+                            <small class="text-muted">Education</small>
+                        </div>
+                        <div class="col-6">
+                            <h4 class="text-warning">{{ candidate.links.count }}</h4>
+                            <small class="text-muted">Links</small>
+                        </div>
+                    </div>
+                    <hr>
+                    <small class="text-muted">
+                        <i class="fas fa-calendar me-1"></i>
+                        Profile updated {{ candidate.updated_at|timesince }} ago
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+
+{% block title %}Add Note - {{ candidate.user.get_full_name|default:candidate.user.username }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4>
+                        <i class="fas fa-sticky-note me-2"></i>
+                        Add Note about {{ candidate.user.get_full_name|default:candidate.user.username }}
+                    </h4>
+                    <p class="mb-0 text-muted">{{ candidate.headline|default:"Professional" }}</p>
+                </div>
+                <div class="card-body">
+                    <!-- Candidate Summary -->
+                    <div class="alert alert-info">
+                        <div class="d-flex align-items-center">
+                            {% if candidate.profile_picture %}
+                                <img src="{{ candidate.profile_picture.url }}" class="rounded-circle me-3" width="50" height="50" alt="Profile">
+                            {% else %}
+                                <div class="bg-secondary rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                                    <i class="fas fa-user text-white"></i>
+                                </div>
+                            {% endif %}
+                            <div>
+                                <h6 class="mb-0">{{ candidate.user.get_full_name|default:candidate.user.username }}</h6>
+                                <small class="text-muted">{{ candidate.location|default:"Location not specified" }}</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.note.id_for_label }}" class="form-label">Your Notes</label>
+                            {{ form.note }}
+                            {% if form.note.errors %}
+                                <div class="text-danger">{{ form.note.errors.0 }}</div>
+                            {% endif %}
+                            <div class="form-text">
+                                <i class="fas fa-lock me-1"></i>
+                                This note is private and only visible to you.
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'recruiters:candidate_detail' candidate.id %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-1"></i>Back to Profile
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-1"></i>Save Note
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

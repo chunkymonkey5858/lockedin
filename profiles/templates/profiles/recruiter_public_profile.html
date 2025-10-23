@@ -1,0 +1,183 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ user.get_full_name|default:user.username }} - Recruiter Profile{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <div class="d-flex align-items-center">
+                        <div class="profile-avatar me-3">
+                            <i class="fas fa-user-tie fa-3x"></i>
+                        </div>
+                        <div>
+                            <h3 class="mb-1">{{ user.get_full_name|default:user.username }}</h3>
+                            <p class="mb-0">
+                                <i class="fas fa-briefcase me-2"></i>Recruiter
+                                {% if profile.title %}
+                                    • {{ profile.title }}
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <h6 class="text-muted">Company</h6>
+                            <p class="mb-0">
+                                <i class="fas fa-building me-2 text-primary"></i>
+                                {{ profile.company|default:"Not specified" }}
+                            </p>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <h6 class="text-muted">Member Since</h6>
+                            <p class="mb-0">
+                                <i class="fas fa-calendar me-2 text-primary"></i>
+                                {{ user.date_joined|date:"F Y" }}
+                            </p>
+                        </div>
+                    </div>
+                    
+                    {% if profile.bio %}
+                        <div class="mb-3">
+                            <h6 class="text-muted">About</h6>
+                            <p>{{ profile.bio|linebreaks }}</p>
+                        </div>
+                    {% endif %}
+                    
+                    {% if profile.is_verified %}
+                        <div class="mb-3">
+                            <span class="badge bg-success">
+                                <i class="fas fa-check-circle me-1"></i>Verified Recruiter
+                            </span>
+                        </div>
+                    {% endif %}
+                    
+                    <!-- Job Postings Summary -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="stat-card text-center p-3 bg-light rounded">
+                                <h4 class="text-primary mb-1">{{ user.posted_jobs.count }}</h4>
+                                <small class="text-muted">Job Postings</small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="stat-card text-center p-3 bg-light rounded">
+                                <h4 class="text-success mb-1">{{ active_jobs_count|default:0 }}</h4>
+                                <small class="text-muted">Active Jobs</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card-footer bg-light">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <small class="text-muted">
+                                Profile updated {{ profile.updated_at|timesince }} ago
+                            </small>
+                        </div>
+                        <div>
+                            {% if user.email %}
+                                <a href="mailto:{{ user.email }}" class="btn btn-outline-primary btn-sm">
+                                    <i class="fas fa-envelope me-1"></i>Contact
+                                </a>
+                            {% endif %}
+                            <a href="{% url 'jobs:job_list' %}?recruiter={{ user.id }}" class="btn btn-primary btn-sm">
+                                <i class="fas fa-briefcase me-1"></i>View Jobs
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Recent Job Postings -->
+            {% if user.posted_jobs.exists %}
+                <div class="card mt-4 shadow">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-briefcase me-2"></i>Recent Job Postings
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        {% for job in user.posted_jobs.all|slice:":3" %}
+                            <div class="job-item border-bottom py-3">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h6 class="mb-1">
+                                            <a href="{% url 'jobs:job_detail' job.id %}" class="text-decoration-none">
+                                                {{ job.title }}
+                                            </a>
+                                        </h6>
+                                        <p class="mb-1 text-muted">{{ job.company }} • {{ job.location }}</p>
+                                        <small class="text-muted">
+                                            Posted {{ job.posted_at|timesince }} ago
+                                        </small>
+                                    </div>
+                                    <div class="text-end">
+                                        {% if job.is_active %}
+                                            <span class="badge bg-success">Active</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Closed</span>
+                                        {% endif %}
+                                        <br>
+                                        <small class="text-muted">{{ job.application_count }} applications</small>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                        
+                        {% if user.posted_jobs.count > 3 %}
+                            <div class="text-center mt-3">
+                                <a href="{% url 'jobs:job_list' %}?recruiter={{ user.id }}" class="btn btn-outline-primary">
+                                    View All {{ user.posted_jobs.count }} Jobs
+                                </a>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.profile-avatar {
+    width: 80px;
+    height: 80px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.stat-card {
+    border: 2px solid #e9ecef;
+    transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+    border-color: #007bff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.job-item:last-child {
+    border-bottom: none !important;
+}
+
+.card {
+    border: none;
+}
+
+.card-header {
+    border-bottom: 2px solid #e9ecef;
+}
+</style>
+{% endblock %}

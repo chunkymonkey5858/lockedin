@@ -1,0 +1,285 @@
+{% extends 'base.html' %}
+
+{% block title %}Recruiter Dashboard{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1>Recruiter Dashboard</h1>
+                <div>
+                    <a href="{% url 'recruiters:candidate_recommendations' %}" class="btn btn-primary me-2">
+                        <i class="fas fa-users me-1"></i>Candidate Recommendations
+                    </a>
+                    <a href="{% url 'jobs:post_job' %}" class="btn btn-primary me-2">
+                        <i class="fas fa-plus me-1"></i>Post a Job
+                    </a>
+                    <a href="{% url 'recruiters:search_candidates' %}" class="btn btn-outline-primary">
+                        <i class="fas fa-search me-1"></i>Find Candidates
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Quick Stats -->
+        <div class="col-md-3 mb-4">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4>{{ recruiter.user.posted_jobs.count }}</h4>
+                            <p class="mb-0">Active Jobs</p>
+                        </div>
+                        <i class="fas fa-briefcase fa-2x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 mb-4">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4>{{ recruiter.saved_searches.count }}</h4>
+                            <p class="mb-0">Saved Searches</p>
+                        </div>
+                        <i class="fas fa-bookmark fa-2x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 mb-4">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4>0</h4>
+                            <p class="mb-0">Total Applications</p>
+                        </div>
+                        <i class="fas fa-file-alt fa-2x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 mb-4">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 id="unread-notifications">0</h4>
+                            <p class="mb-0">Unread Notifications</p>
+                        </div>
+                        <i class="fas fa-bell fa-2x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Quick Access Card for Candidate Recommendations -->
+            <div class="col-md-3 mb-4">
+                <div class="card border-primary">
+                    <div class="card-body text-center">
+                        <i class="fas fa-magic fa-3x text-primary mb-3"></i>
+                        <h6 class="card-title">Smart Recommendations</h6>
+                        <p class="card-text small">Get AI-powered candidate matches for your jobs</p>
+                        <a href="{% url 'recruiters:candidate_recommendations' %}" class="btn btn-primary btn-sm">
+                            <i class="fas fa-users me-1"></i>View Recommendations
+                        </a>
+                    </div>
+                </div>
+            </div>
+    </div>
+    
+    <div class="row">
+        <!-- Recent Jobs -->
+        <div class="col-md-8 mb-4">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Recent Job Postings</h5>
+                    <a href="{% url 'jobs:my_jobs' %}" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="card-body">
+                    {% if recent_jobs %}
+                        {% for job in recent_jobs %}
+                            <div class="d-flex justify-content-between align-items-center border-bottom py-3">
+                                <div>
+                                    <h6 class="mb-1">
+                                        <a href="{% url 'jobs:job_detail' job.id %}" class="text-decoration-none">
+                                            {{ job.title }}
+                                        </a>
+                                    </h6>
+                                    <small class="text-muted">{{ job.company }} • {{ job.location }}</small>
+                                </div>
+                                <div class="text-end">
+                                    <span class="badge bg-primary">{{ job.application_count }} applications</span>
+                                    <br>
+                                    <small class="text-muted">{{ job.posted_at|timesince }} ago</small>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-briefcase fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No jobs posted yet</h5>
+                            <p class="text-muted">Start by posting your first job opening.</p>
+                            <a href="{% url 'jobs:post_job' %}" class="btn btn-primary">Post a Job</a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Recent Searches -->
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Saved Searches</h5>
+                    <a href="{% url 'recruiters:saved_searches' %}" class="btn btn-sm btn-outline-primary">Manage</a>
+                </div>
+                <div class="card-body">
+                    {% if recent_searches %}
+                        {% for search in recent_searches %}
+                            <div class="d-flex justify-content-between align-items-center border-bottom py-2">
+                                <div>
+                                    <h6 class="mb-1">{{ search.name }}</h6>
+                                    <small class="text-muted">{{ search.description|truncatewords:5 }}</small>
+                                </div>
+                                <a href="{% url 'recruiters:run_saved_search' search.id %}" class="btn btn-sm btn-outline-primary">
+                                    Run
+                                </a>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-3">
+                            <i class="fas fa-search fa-2x text-muted mb-2"></i>
+                            <p class="text-muted mb-2">No saved searches</p>
+                            <a href="{% url 'recruiters:create_saved_search' %}" class="btn btn-sm btn-primary">Create Search</a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Quick Actions -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'jobs:post_job' %}" class="btn btn-outline-primary w-100">
+                                <i class="fas fa-plus d-block mb-2"></i>
+                                Post New Job
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'recruiters:search_candidates' %}" class="btn btn-outline-info w-100">
+                                <i class="fas fa-search d-block mb-2"></i>
+                                Search Candidates
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'recruiters:create_saved_search' %}" class="btn btn-outline-success w-100">
+                                <i class="fas fa-bookmark d-block mb-2"></i>
+                                Save Search
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'recruiters:application_pipeline' %}" class="btn btn-outline-warning w-100">
+                                <i class="fas fa-columns d-block mb-2"></i>
+                                Application Pipeline
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'conversations_list' %}" class="btn btn-primary w-100 fw-bold text-white">
+                                <i class="fas fa-comments d-block mb-2"></i>
+                                Messages
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'jobs:my_jobs' %}" class="btn btn-outline-secondary w-100">
+                                <i class="fas fa-list d-block mb-2"></i>
+                                Manage Jobs
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Notifications Section -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-bell me-2"></i>Recent Notifications
+                    </h5>
+                    <a href="{% url 'recruiters:notification_history' %}" class="btn btn-sm btn-outline-primary">
+                        View All Notifications
+                    </a>
+                </div>
+                <div class="card-body">
+                    <div id="notification-stats" class="row">
+                        <div class="col-md-4">
+                            <div class="text-center">
+                                <h3 id="total-notifications" class="text-primary">-</h3>
+                                <p class="mb-0">Total Notifications (30 days)</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center">
+                                <h3 id="active-searches" class="text-success">-</h3>
+                                <p class="mb-0">Active Saved Searches</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center">
+                                <h3 id="notification-rate" class="text-info">-</h3>
+                                <p class="mb-0">Avg. Notifications/Day</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Load notification stats
+    fetch('/recruiters/notifications/stats/')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const stats = data.stats;
+                
+                // Update dashboard stats
+                document.getElementById('unread-notifications').textContent = stats.unread_notifications;
+                document.getElementById('total-notifications').textContent = stats.total_notifications;
+                document.getElementById('active-searches').textContent = stats.active_searches;
+                
+                // Calculate average notifications per day
+                const avgPerDay = stats.total_notifications > 0 ? 
+                    (stats.total_notifications / 30).toFixed(1) : '0';
+                document.getElementById('notification-rate').textContent = avgPerDay;
+            }
+        })
+        .catch(error => {
+            console.error('Error loading notification stats:', error);
+        });
+});
+</script>
+{% endblock %}

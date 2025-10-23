@@ -28,4 +28,9 @@ urlpatterns = [
     
     # AJAX endpoints
     path('applications/<int:application_id>/update-status/', views.update_application_status, name='update_application_status'),
+    
+    # Admin moderation
+    path('admin/delete/<int:job_id>/', views.admin_delete_job, name='admin_delete_job'),
+    path('admin/deactivate/<int:job_id>/', views.admin_deactivate_job, name='admin_deactivate_job'),
+    path('admin/activate/<int:job_id>/', views.admin_activate_job, name='admin_activate_job'),
 ]

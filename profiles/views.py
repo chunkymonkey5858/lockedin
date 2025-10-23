@@ -823,6 +823,13 @@ def admin_dashboard(request):
     job_seekers = CustomUser.objects.filter(user_type='job_seeker').count()
     recruiters = CustomUser.objects.filter(user_type='recruiter').count()
     
+    # Job posting statistics
+    from jobs.models import JobPosting
+    recent_jobs = JobPosting.objects.filter(is_active=True).order_by('-posted_at')[:10]
+    total_jobs = JobPosting.objects.count()
+    active_jobs = JobPosting.objects.filter(is_active=True).count()
+    inactive_jobs = JobPosting.objects.filter(is_active=False).count()
+    
     context = {
         'users': users_page,
         'search_form': search_form,
@@ -832,6 +839,10 @@ def admin_dashboard(request):
         'flagged_users': flagged_users,
         'job_seekers': job_seekers,
         'recruiters': recruiters,
+        'recent_jobs': recent_jobs,
+        'total_jobs': total_jobs,
+        'active_jobs': active_jobs,
+        'inactive_jobs': inactive_jobs,
     }
     
     return render(request, 'profiles/admin_dashboard.html', context)

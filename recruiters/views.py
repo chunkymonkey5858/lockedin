@@ -7,7 +7,7 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from profiles.models import JobSeekerProfile, Skill, WorkExperience, Education
 from jobs.models import JobPosting, JobSkill
-from .models import RecruiterProfile, SavedSearch, CandidateNote
+from .models import RecruiterProfile, SavedSearch, CandidateNote, SearchNotification
 from .forms import CandidateSearchForm, SavedSearchForm, CandidateNoteForm
 
 @login_required
@@ -446,3 +446,84 @@ def candidate_recommendations(request):
     }
     
     return render(request, 'recruiters/candidate_recommendations.html', context)
+
+
+@login_required
+def notification_history(request):
+    """View notification history for a recruiter"""
+    if not hasattr(request.user, 'recruiter_profile'):
+        messages.error(request, 'Only recruiters can access this page.')
+        return redirect('home')
+    
+    recruiter = request.user.recruiter_profile
+    
+    # Get all notifications for the recruiter's saved searches
+    notifications = SearchNotification.objects.filter(
+        saved_search__recruiter=recruiter
+    ).select_related('saved_search').order_by('-sent_at')
+    
+    # Pagination
+    paginator = Paginator(notifications, 20)
+    page_number = request.GET.get('page')
+    notifications = paginator.get_page(page_number)
+    
+    context = {
+        'notifications': notifications,
+        'recruiter': recruiter,
+    }
+    
+    return render(request, 'recruiters/notification_history.html', context)
+
+
+@login_required
+def mark_notification_read(request, notification_id):
+    """Mark a notification as read"""
+    if not hasattr(request.user, 'recruiter_profile'):
+        return JsonResponse({'success': False, 'message': 'Unauthorized'})
+    
+    recruiter = request.user.recruiter_profile
+    
+    try:
+        notification = SearchNotification.objects.get(
+            id=notification_id,
+            saved_search__recruiter=recruiter
+        )
+        notification.is_read = True
+        notification.save()
+        
+        return JsonResponse({'success': True})
+    except SearchNotification.DoesNotExist:
+        return JsonResponse({'success': False, 'message': 'Notification not found'})
+
+
+@login_required
+def notification_stats(request):
+    """Get notification statistics for dashboard"""
+    if not hasattr(request.user, 'recruiter_profile'):
+        return JsonResponse({'success': False, 'message': 'Unauthorized'})
+    
+    recruiter = request.user.recruiter_profile
+    
+    # Get stats for the last 30 days
+    from django.utils import timezone
+    from datetime import timedelta
+    
+    thirty_days_ago = timezone.now() - timedelta(days=30)
+    
+    stats = {
+        'total_notifications': SearchNotification.objects.filter(
+            saved_search__recruiter=recruiter,
+            sent_at__gte=thirty_days_ago
+        ).count(),
+        'unread_notifications': SearchNotification.objects.filter(
+            saved_search__recruiter=recruiter,
+            is_read=False
+        ).count(),
+        'active_searches': SavedSearch.objects.filter(
+            recruiter=recruiter,
+            is_active=True,
+            notify_on_new_matches=True
+        ).count(),
+    }
+    
+    return JsonResponse({'success': True, 'stats': stats})

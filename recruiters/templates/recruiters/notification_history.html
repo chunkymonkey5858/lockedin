@@ -1,0 +1,143 @@
+{% extends 'base.html' %}
+
+{% block title %}Notification History{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>
+                    <i class="fas fa-bell me-2"></i>Notification History
+                </h2>
+                <a href="{% url 'recruiters:dashboard' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
+                </a>
+            </div>
+            
+            {% if notifications %}
+                <div class="row">
+                    {% for notification in notifications %}
+                    <div class="col-md-6 col-lg-4 mb-3">
+                        <div class="card {% if not notification.is_read %}border-primary{% endif %}">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <span class="badge bg-{% if notification.notification_type == 'immediate' %}danger{% elif notification.notification_type == 'daily' %}warning{% else %}info{% endif %}">
+                                    {{ notification.get_notification_type_display }}
+                                </span>
+                                {% if not notification.is_read %}
+                                    <span class="badge bg-primary">New</span>
+                                {% endif %}
+                            </div>
+                            <div class="card-body">
+                                <h6 class="card-title">{{ notification.saved_search.name }}</h6>
+                                <p class="card-text">
+                                    <i class="fas fa-users me-1"></i>
+                                    {{ notification.matches_count }} new candidate{{ notification.matches_count|pluralize }} found
+                                </p>
+                                <p class="card-text">
+                                    <small class="text-muted">
+                                        <i class="fas fa-clock me-1"></i>
+                                        {{ notification.sent_at|timesince }} ago
+                                    </small>
+                                </p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <a href="{% url 'recruiters:run_saved_search' notification.saved_search.id %}" 
+                                       class="btn btn-sm btn-outline-primary">
+                                        View Matches
+                                    </a>
+                                    {% if not notification.is_read %}
+                                        <button class="btn btn-sm btn-outline-success mark-read-btn" 
+                                                data-notification-id="{{ notification.id }}">
+                                            Mark as Read
+                                        </button>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <!-- Pagination -->
+                {% if notifications.has_other_pages %}
+                <nav aria-label="Notification pagination">
+                    <ul class="pagination justify-content-center">
+                        {% if notifications.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1">First</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ notifications.previous_page_number }}">Previous</a>
+                            </li>
+                        {% endif %}
+                        
+                        <li class="page-item active">
+                            <span class="page-link">
+                                Page {{ notifications.number }} of {{ notifications.paginator.num_pages }}
+                            </span>
+                        </li>
+                        
+                        {% if notifications.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ notifications.next_page_number }}">Next</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ notifications.paginator.num_pages }}">Last</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+                
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-bell-slash fa-3x text-muted mb-3"></i>
+                    <h4 class="text-muted">No Notifications Yet</h4>
+                    <p class="text-muted">
+                        You haven't received any notifications yet. 
+                        <a href="{% url 'recruiters:create_saved_search' %}">Create a saved search</a> 
+                        to start getting notified about new candidates.
+                    </p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle mark as read buttons
+    document.querySelectorAll('.mark-read-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const notificationId = this.dataset.notificationId;
+            const card = this.closest('.card');
+            
+            fetch(`/recruiters/notifications/${notificationId}/mark-read/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                    'Content-Type': 'application/json',
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Remove the "New" badge and mark as read button
+                    const newBadge = card.querySelector('.badge.bg-primary');
+                    if (newBadge) newBadge.remove();
+                    
+                    this.remove();
+                    
+                    // Remove border-primary class
+                    card.classList.remove('border-primary');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to mark notification as read');
+            });
+        });
+    });
+});
+</script>
+{% endblock %}

@@ -252,6 +252,108 @@
             </div>
         </div>
     </div>
+    
+    <!-- Job Posting Moderation Section -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="h5 mb-0">
+                        <i class="fas fa-briefcase me-2"></i>Job Post Moderation
+                    </h4>
+                    <div class="d-flex gap-2">
+                        <span class="badge bg-success">{{ active_jobs }} Active</span>
+                        <span class="badge bg-secondary">{{ inactive_jobs }} Inactive</span>
+                        <span class="badge bg-primary">{{ total_jobs }} Total</span>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    {% if recent_jobs %}
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Job Title</th>
+                                        <th>Company</th>
+                                        <th>Posted By</th>
+                                        <th>Status</th>
+                                        <th>Posted</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for job in recent_jobs %}
+                                        <tr>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <div class="bg-info rounded-circle d-flex align-items-center justify-content-center me-3" 
+                                                         style="width: 40px; height: 40px;">
+                                                        <i class="fas fa-briefcase text-white"></i>
+                                                    </div>
+                                                    <div>
+                                                        <h6 class="mb-0">{{ job.title }}</h6>
+                                                        <small class="text-muted">{{ job.location }}</small>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>{{ job.company }}</td>
+                                            <td>
+                                                <div>
+                                                    <strong>{{ job.posted_by.get_full_name|default:job.posted_by.username }}</strong>
+                                                    <br><small class="text-muted">{{ job.posted_by.email }}</small>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                {% if job.is_active %}
+                                                    <span class="badge bg-success">Active</span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary">Inactive</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <small>{{ job.posted_at|timesince }} ago</small>
+                                            </td>
+                                            <td>
+                                                <div class="btn-group btn-group-sm" role="group">
+                                                    <a href="{% url 'jobs:job_detail' job.id %}" 
+                                                       class="btn btn-outline-primary" title="View Job">
+                                                        <i class="fas fa-eye"></i>
+                                                    </a>
+                                                    {% if job.is_active %}
+                                                        <a href="{% url 'jobs:admin_deactivate_job' job.id %}" 
+                                                           class="btn btn-outline-warning" title="Deactivate Job"
+                                                           onclick="return confirm('Are you sure you want to deactivate this job?')">
+                                                            <i class="fas fa-pause"></i>
+                                                        </a>
+                                                    {% else %}
+                                                        <a href="{% url 'jobs:admin_activate_job' job.id %}" 
+                                                           class="btn btn-outline-success" title="Activate Job">
+                                                            <i class="fas fa-play"></i>
+                                                        </a>
+                                                    {% endif %}
+                                                    <a href="{% url 'jobs:admin_delete_job' job.id %}" 
+                                                       class="btn btn-outline-danger" title="Delete Job"
+                                                       onclick="return confirm('Are you sure you want to permanently delete this job? This action cannot be undone.')">
+                                                        <i class="fas fa-trash"></i>
+                                                    </a>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-briefcase text-muted" style="font-size: 4rem;"></i>
+                            <h3 class="text-muted mt-3">No Job Postings</h3>
+                            <p class="text-muted">No job postings found.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- Status Update Modal -->

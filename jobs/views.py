@@ -666,3 +666,44 @@ def job_map(request):
     }
     
     return render(request, 'jobs/job_map.html', context)
+
+
+# Admin moderation views
+def admin_required(view_func):
+    """Decorator to require admin access"""
+    def wrapper(request, *args, **kwargs):
+        if not request.user.is_authenticated or not request.user.is_staff:
+            messages.error(request, 'You must be an admin to access this page.')
+            return redirect('home')
+        return view_func(request, *args, **kwargs)
+    return wrapper
+
+
+@admin_required
+def admin_delete_job(request, job_id):
+    """Admin can delete a job posting"""
+    job = get_object_or_404(JobPosting, id=job_id)
+    job_title = job.title
+    job.delete()  # Hard delete
+    messages.success(request, f'Job "{job_title}" has been permanently deleted.')
+    return redirect('profiles:admin_dashboard')
+
+
+@admin_required
+def admin_deactivate_job(request, job_id):
+    """Admin can deactivate a job posting"""
+    job = get_object_or_404(JobPosting, id=job_id)
+    job.is_active = False
+    job.save()
+    messages.success(request, f'Job "{job.title}" has been deactivated.')
+    return redirect('profiles:admin_dashboard')
+
+
+@admin_required
+def admin_activate_job(request, job_id):
+    """Admin can reactivate a job posting"""
+    job = get_object_or_404(JobPosting, id=job_id)
+    job.is_active = True
+    job.save()
+    messages.success(request, f'Job "{job.title}" has been reactivated.')
+    return redirect('profiles:admin_dashboard')

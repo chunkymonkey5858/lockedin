@@ -64,7 +64,10 @@ class CandidateSearchForm(forms.Form):
 class SavedSearchForm(forms.ModelForm):
     class Meta:
         model = SavedSearch
-        fields = ['name', 'description', 'skills', 'location', 'experience_level', 'employment_type']
+        fields = [
+            'name', 'description', 'skills', 'location', 'experience_level', 'employment_type',
+            'notify_on_new_matches', 'notification_frequency'
+        ]
         widgets = {
             'name': forms.TextInput(attrs={
                 'class': 'form-control',
@@ -81,7 +84,9 @@ class SavedSearchForm(forms.ModelForm):
             }),
             'experience_level': forms.Select(attrs={'class': 'form-select'}),
             'employment_type': forms.Select(attrs={'class': 'form-select'}),
+            'notification_frequency': forms.Select(attrs={'class': 'form-select'}),
             'skills': forms.CheckboxSelectMultiple,
+            'notify_on_new_matches': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
     
     def __init__(self, *args, **kwargs):

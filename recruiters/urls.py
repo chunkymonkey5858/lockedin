@@ -18,4 +18,9 @@ urlpatterns = [
     path('saved-searches/create/', views.create_saved_search, name='create_saved_search'),
     path('saved-searches/<int:search_id>/run/', views.run_saved_search, name='run_saved_search'),
     path('saved-searches/<int:search_id>/delete/', views.delete_saved_search, name='delete_saved_search'),
+    
+    # Notifications
+    path('notifications/', views.notification_history, name='notification_history'),
+    path('notifications/<int:notification_id>/mark-read/', views.mark_notification_read, name='mark_notification_read'),
+    path('notifications/stats/', views.notification_stats, name='notification_stats'),
 ]

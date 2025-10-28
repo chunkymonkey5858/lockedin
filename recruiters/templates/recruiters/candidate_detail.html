@@ -200,10 +200,24 @@
                             <i class="fas fa-sticky-note me-1"></i>
                             {% if recruiter_note %}Edit Note{% else %}Add Note{% endif %}
                         </a>
-                        <a href="mailto:{{ candidate.user.email }}" class="btn btn-outline-primary">
-                            <i class="fas fa-envelope me-1"></i>Send Email
-                        </a>
-                        <a href="{% url 'recruiters:search_candidates' %}" class="btn btn-outline-secondary">
+                        
+                        <!-- Communication Options -->
+                        <div class="border-top pt-3 pb-2">
+                            <h6 class="text-muted mb-2 small">
+                                <i class="fas fa-comments me-1"></i>Contact Candidate
+                            </h6>
+                            <a href="{% url 'start_conversation' candidate.user.id %}" class="btn btn-success btn-sm w-100 mb-2">
+                                <i class="fas fa-comment-dots me-1"></i>Send Platform Message
+                            </a>
+                            <a href="mailto:{{ candidate.user.email }}" class="btn btn-outline-success btn-sm w-100">
+                                <i class="fas fa-envelope me-1"></i>Send Email ({{ candidate.user.email }})
+                            </a>
+                            <small class="text-muted d-block mt-2">
+                                <i class="fas fa-info-circle me-1"></i>Use messaging for in-platform chat or email for their personal inbox
+                            </small>
+                        </div>
+                        
+                        <a href="{% url 'recruiters:search_candidates' %}" class="btn btn-outline-secondary mt-2">
                             <i class="fas fa-arrow-left me-1"></i>Back to Search
                         </a>
                     </div>

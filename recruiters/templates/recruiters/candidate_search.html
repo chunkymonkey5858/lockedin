@@ -105,9 +105,20 @@
                                                 <small class="text-muted">
                                                     Updated {{ candidate.updated_at|timesince }} ago
                                                 </small>
-                                                <a href="{% url 'recruiters:candidate_detail' candidate.id %}" class="btn btn-sm btn-outline-primary">
-                                                    View Profile
-                                                </a>
+                                                <div class="btn-group">
+                                                    <a href="{% url 'recruiters:candidate_detail' candidate.id %}" 
+                                                       class="btn btn-sm btn-outline-primary" title="View Full Profile">
+                                                        <i class="fas fa-user"></i>
+                                                    </a>
+                                                    <a href="{% url 'start_conversation' candidate.user.id %}" 
+                                                       class="btn btn-sm btn-outline-success" title="Message">
+                                                        <i class="fas fa-comment-dots"></i>
+                                                    </a>
+                                                    <a href="mailto:{{ candidate.user.email }}" 
+                                                       class="btn btn-sm btn-outline-info" title="Email">
+                                                        <i class="fas fa-envelope"></i>
+                                                    </a>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>

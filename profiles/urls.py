@@ -56,6 +56,12 @@ urlpatterns = [
     path('conversations/<int:conversation_id>/send-message/', views.send_message_ajax, name='send_message_ajax'),
     path('conversations/<int:conversation_id>/mark-read/', views.mark_messages_read, name='mark_messages_read'),
 
+    # Notification URLs
+    path('notifications/', views.notifications_list, name='notifications'),
+    path('notifications/<int:notification_id>/mark-read/', views.mark_notification_read, name='mark_notification_read'),
+    path('notifications/mark-all-read/', views.mark_all_notifications_read, name='mark_all_notifications_read'),
+    path('notifications/count/', views.get_unread_notification_count, name='get_unread_notification_count'),
+
 ]
 
 

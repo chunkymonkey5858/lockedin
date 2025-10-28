@@ -346,3 +346,46 @@ class Message(models.Model):
             self.is_read = True
             self.read_at = timezone.now()
             self.save(update_fields=['is_read', 'read_at'])
+
+class Notification(models.Model):
+    """Notifications for job seekers about application updates, offers, interviews"""
+    NOTIFICATION_TYPES = [
+        ('application_status', 'Application Status Change'),
+        ('interview', 'Interview Invitation'),
+        ('offer', 'Job Offer'),
+        ('message', 'New Message'),
+        ('profile_view', 'Profile Viewed'),
+        ('job_match', 'Job Match'),
+    ]
+    
+    recipient = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='notifications')
+    notification_type = models.CharField(max_length=20, choices=NOTIFICATION_TYPES)
+    title = models.CharField(max_length=255)
+    message = models.TextField()
+    link = models.CharField(max_length=500, blank=True)  # URL to the related item
+    
+    # Related objects (optional, for context)
+    from jobs.models import JobApplication, JobPosting
+    job_application = models.ForeignKey('jobs.JobApplication', on_delete=models.CASCADE, null=True, blank=True, related_name='notifications')
+    job_posting = models.ForeignKey('jobs.JobPosting', on_delete=models.CASCADE, null=True, blank=True, related_name='notifications')
+    
+    is_read = models.BooleanField(default=False)
+    read_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['recipient', '-created_at']),
+            models.Index(fields=['recipient', 'is_read', '-created_at']),
+        ]
+    
+    def __str__(self):
+        return f"{self.get_notification_type_display()} for {self.recipient.username}"
+    
+    def mark_as_read(self):
+        """Mark notification as read"""
+        if not self.is_read:
+            self.is_read = True
+            self.read_at = timezone.now()
+            self.save()

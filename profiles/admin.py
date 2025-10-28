@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import CustomUser, JobSeekerProfile, Skill, Education, WorkExperience, Link
+from .models import CustomUser, JobSeekerProfile, Skill, Education, WorkExperience, Link, Notification
 
 class CustomUserAdmin(UserAdmin):
     list_display = ['username', 'email', 'first_name', 'last_name', 'user_type', 'is_staff']
@@ -39,3 +39,10 @@ admin.site.register(Skill)
 admin.site.register(Education)
 admin.site.register(WorkExperience)
 admin.site.register(Link)
+
+@admin.register(Notification)
+class NotificationAdmin(admin.ModelAdmin):
+    list_display = ('recipient', 'notification_type', 'title', 'is_read', 'created_at')
+    list_filter = ('notification_type', 'is_read', 'created_at')
+    search_fields = ('recipient__username', 'title', 'message')
+    readonly_fields = ('created_at', 'read_at')

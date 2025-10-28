@@ -6,7 +6,7 @@ from django.db import transaction, models
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.utils import timezone
-from .models import CustomUser, JobSeekerProfile, AdminActionLog, PrivacySettings, Conversation, Message
+from .models import CustomUser, JobSeekerProfile, AdminActionLog, PrivacySettings, Conversation, Message, Notification
 from .forms import (
     UserRegistrationForm, JobSeekerRegistrationForm, JobSeekerProfileForm,
     SkillFormSet, EducationFormSet, WorkExperienceFormSet, LinkFormSet,
@@ -232,13 +232,44 @@ def view_profile(request, user_id=None):
     return render(request, 'profiles/view_profile.html', context)
 
 def public_profile_list(request):
-    """List all public job seeker profiles"""
+    """List all public job seeker profiles with search and pagination"""
+    from django.core.paginator import Paginator
+    from django.db.models import Q
+    
     profiles = JobSeekerProfile.objects.filter(
         is_public=True
-    ).select_related('user').prefetch_related('skills')
+    ).select_related('user').prefetch_related('skills').order_by('-updated_at')
+    
+    # Search functionality
+    search_query = request.GET.get('search', '')
+    location_filter = request.GET.get('location', '')
+    skill_filter = request.GET.get('skill', '')
+    
+    if search_query:
+        profiles = profiles.filter(
+            Q(user__first_name__icontains=search_query) |
+            Q(user__last_name__icontains=search_query) |
+            Q(headline__icontains=search_query) |
+            Q(bio__icontains=search_query)
+        )
+    
+    if location_filter:
+        profiles = profiles.filter(location__icontains=location_filter)
+    
+    if skill_filter:
+        profiles = profiles.filter(skills__name__icontains=skill_filter).distinct()
+    
+    # Pagination
+    paginator = Paginator(profiles, 6)  # Show 6 profiles per page
+    page_number = request.GET.get('page', 1)
+    profiles_page = paginator.get_page(page_number)
     
     context = {
-        'profiles': profiles,
+        'profiles': profiles_page,
+        'search_query': search_query,
+        'location_filter': location_filter,
+        'skill_filter': skill_filter,
+        'total_count': paginator.count,
     }
     
     return render(request, 'profiles/profile_list.html', context)
@@ -1292,3 +1323,60 @@ def mark_messages_read(request, conversation_id):
         'message': f'{count} messages marked as read',
         'marked_count': count
     })
+
+@login_required
+def notifications_list(request):
+    """Display user notifications with filtering and pagination"""
+    from django.core.paginator import Paginator
+    
+    notifications = Notification.objects.filter(recipient=request.user)
+    
+    # Filter by type or read status
+    filter_type = request.GET.get('filter', '')
+    if filter_type == 'unread':
+        notifications = notifications.filter(is_read=False)
+    elif filter_type in ['application_status', 'interview', 'offer', 'message', 'profile_view', 'job_match']:
+        notifications = notifications.filter(notification_type=filter_type)
+    
+    # Pagination
+    paginator = Paginator(notifications, 20)  # 20 per page
+    page_number = request.GET.get('page', 1)
+    notifications_page = paginator.get_page(page_number)
+    
+    context = {
+        'notifications': notifications_page,
+        'unread_count': Notification.objects.filter(recipient=request.user, is_read=False).count(),
+        'total_count': Notification.objects.filter(recipient=request.user).count(),
+        'filter': filter_type,
+    }
+    
+    return render(request, 'profiles/notifications.html', context)
+
+@login_required
+@require_http_methods(["POST"])
+def mark_notification_read(request, notification_id):
+    """Mark a single notification as read"""
+    notification = get_object_or_404(Notification, id=notification_id, recipient=request.user)
+    notification.mark_as_read()
+    
+    return JsonResponse({
+        'success': True,
+        'message': 'Notification marked as read'
+    })
+
+@login_required
+@require_http_methods(["POST"])
+def mark_all_notifications_read(request):
+    """Mark all user notifications as read"""
+    count = Notification.objects.filter(
+        recipient=request.user,
+        is_read=False
+    ).update(is_read=True, read_at=timezone.now())
+    
+    return redirect('notifications')
+
+@login_required
+def get_unread_notification_count(request):
+    """AJAX endpoint to get unread notification count"""
+    count = Notification.objects.filter(recipient=request.user, is_read=False).count()
+    return JsonResponse({'count': count})

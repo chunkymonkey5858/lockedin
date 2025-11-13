@@ -78,11 +78,17 @@
                 </div>
             {% endif %}
             <div class="d-flex flex-column gap-2">
-                <a href="{% url 'recruiters:candidate_detail' candidate.id %}" class="btn btn-outline-success">
+                <a href="{% url 'recruiters:candidate_detail' candidate.id %}" class="btn btn-primary">
                     <i class="fas fa-eye me-2"></i>View Profile
                 </a>
-                <a href="{% url 'recruiters:add_candidate_note' candidate.id %}" class="btn btn-success">
-                    <i class="fas fa-sticky-note me-2"></i>Add Note
+                <a href="{% url 'start_conversation' candidate.user.id %}" class="btn btn-success btn-sm">
+                    <i class="fas fa-comment-dots me-2"></i>Message
+                </a>
+                <a href="mailto:{{ candidate.user.email }}" class="btn btn-outline-success btn-sm">
+                    <i class="fas fa-envelope me-2"></i>Email
+                </a>
+                <a href="{% url 'recruiters:add_candidate_note' candidate.id %}" class="btn btn-outline-secondary btn-sm">
+                    <i class="fas fa-sticky-note me-2"></i>Note
                 </a>
             </div>
         </div>

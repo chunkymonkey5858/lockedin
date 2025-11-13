@@ -115,8 +115,12 @@
                                     <td>
                                         <div class="btn-group" role="group">
                                             <a href="{% url 'view_public_profile' application.applicant.id %}" 
-                                               class="btn btn-sm btn-outline-info" title="View Profile">
+                                               class="btn btn-sm btn-outline-info" title="View Full Profile">
                                                 <i class="fas fa-user"></i>
+                                            </a>
+                                            <a href="{% url 'start_conversation' application.applicant.id %}" 
+                                               class="btn btn-sm btn-outline-primary" title="Send Platform Message">
+                                                <i class="fas fa-comment-dots"></i>
                                             </a>
                                             <a href="mailto:{{ application.applicant.email }}" 
                                                class="btn btn-sm btn-outline-success" title="Send Email">

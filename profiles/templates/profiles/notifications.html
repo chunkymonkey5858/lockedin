@@ -1,0 +1,197 @@
+{% extends 'base.html' %}
+
+{% block title %}Notifications{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-bell me-2"></i>Your Notifications</h2>
+        <div>
+            {% if unread_count > 0 %}
+                <form method="post" action="{% url 'mark_all_notifications_read' %}" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-check-double me-1"></i>Mark All Read
+                    </button>
+                </form>
+            {% endif %}
+            <span class="badge bg-primary">{{ unread_count }} Unread</span>
+        </div>
+    </div>
+
+    <!-- Filter Tabs -->
+    <ul class="nav nav-tabs mb-4">
+        <li class="nav-item">
+            <a class="nav-link {% if not filter %}active{% endif %}" href="{% url 'notifications' %}">
+                All <span class="badge bg-secondary ms-1">{{ total_count }}</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if filter == 'unread' %}active{% endif %}" href="{% url 'notifications' %}?filter=unread">
+                Unread <span class="badge bg-primary ms-1">{{ unread_count }}</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if filter == 'application_status' %}active{% endif %}" href="{% url 'notifications' %}?filter=application_status">
+                <i class="fas fa-briefcase me-1"></i>Applications
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if filter == 'interview' %}active{% endif %}" href="{% url 'notifications' %}?filter=interview">
+                <i class="fas fa-calendar-check me-1"></i>Interviews
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if filter == 'offer' %}active{% endif %}" href="{% url 'notifications' %}?filter=offer">
+                <i class="fas fa-trophy me-1"></i>Offers
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if filter == 'message' %}active{% endif %}" href="{% url 'notifications' %}?filter=message">
+                <i class="fas fa-comment me-1"></i>Messages
+            </a>
+        </li>
+    </ul>
+
+    <!-- Notifications List -->
+    {% if notifications %}
+        <div class="list-group">
+            {% for notification in notifications %}
+                <div class="list-group-item list-group-item-action {% if not notification.is_read %}list-group-item-info{% endif %} notification-item" 
+                     data-notification-id="{{ notification.id }}">
+                    <div class="d-flex w-100 justify-content-between align-items-start">
+                        <div class="flex-grow-1">
+                            <div class="d-flex align-items-center mb-2">
+                                <!-- Icon based on notification type -->
+                                {% if notification.notification_type == 'application_status' %}
+                                    <i class="fas fa-briefcase fa-2x text-primary me-3"></i>
+                                {% elif notification.notification_type == 'interview' %}
+                                    <i class="fas fa-calendar-check fa-2x text-success me-3"></i>
+                                {% elif notification.notification_type == 'offer' %}
+                                    <i class="fas fa-trophy fa-2x text-warning me-3"></i>
+                                {% elif notification.notification_type == 'message' %}
+                                    <i class="fas fa-comment fa-2x text-info me-3"></i>
+                                {% elif notification.notification_type == 'profile_view' %}
+                                    <i class="fas fa-eye fa-2x text-secondary me-3"></i>
+                                {% elif notification.notification_type == 'job_match' %}
+                                    <i class="fas fa-star fa-2x text-success me-3"></i>
+                                {% endif %}
+                                
+                                <div>
+                                    <h5 class="mb-1">
+                                        {{ notification.title }}
+                                        {% if not notification.is_read %}
+                                            <span class="badge bg-primary ms-2">New</span>
+                                        {% endif %}
+                                    </h5>
+                                    <p class="mb-1">{{ notification.message }}</p>
+                                    <small class="text-muted">
+                                        <i class="fas fa-clock me-1"></i>{{ notification.created_at|timesince }} ago
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="ms-3">
+                            {% if notification.link %}
+                                <a href="{{ notification.link }}" class="btn btn-sm btn-primary mb-2">
+                                    <i class="fas fa-external-link-alt me-1"></i>View
+                                </a>
+                            {% endif %}
+                            {% if not notification.is_read %}
+                                <button class="btn btn-sm btn-outline-secondary mark-read-btn" 
+                                        data-notification-id="{{ notification.id }}">
+                                    <i class="fas fa-check me-1"></i>Mark Read
+                                </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Pagination -->
+        {% if notifications.has_other_pages %}
+            <nav aria-label="Notification pagination" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if notifications.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ notifications.previous_page_number }}{% if filter %}&filter={{ filter }}{% endif %}">
+                                Previous
+                            </a>
+                        </li>
+                    {% endif %}
+                    
+                    <li class="page-item active">
+                        <span class="page-link">
+                            Page {{ notifications.number }} of {{ notifications.paginator.num_pages }}
+                        </span>
+                    </li>
+                    
+                    {% if notifications.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ notifications.next_page_number }}{% if filter %}&filter={{ filter }}{% endif %}">
+                                Next
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        {% endif %}
+    {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-bell-slash fa-4x text-muted mb-3"></i>
+            <h4>No notifications</h4>
+            <p class="text-muted">
+                {% if filter %}
+                    No {{ filter }} notifications found.
+                {% else %}
+                    You don't have any notifications yet. Check back later!
+                {% endif %}
+            </p>
+            {% if filter %}
+                <a href="{% url 'notifications' %}" class="btn btn-primary">
+                    <i class="fas fa-list me-1"></i>View All Notifications
+                </a>
+            {% endif %}
+        </div>
+    {% endif %}
+</div>
+
+{% csrf_token %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Mark single notification as read
+document.querySelectorAll('.mark-read-btn').forEach(button => {
+    button.addEventListener('click', function() {
+        const notificationId = this.dataset.notificationId;
+        const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        
+        fetch(`/notifications/${notificationId}/mark-read/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrftoken,
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Remove the "New" badge and mark-read button
+                const notificationItem = document.querySelector(`[data-notification-id="${notificationId}"]`);
+                notificationItem.classList.remove('list-group-item-info');
+                const newBadge = notificationItem.querySelector('.badge.bg-primary');
+                if (newBadge) newBadge.remove();
+                this.remove();
+                
+                // Update unread count
+                location.reload();
+            }
+        });
+    });
+});
+</script>
+{% endblock %}
+

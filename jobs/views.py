@@ -545,19 +545,41 @@ def job_recommendations(request):
 def job_map(request):
     """Interactive map view showing all jobs with location filtering"""
     from jobs.utils import get_user_location_from_request
-    
+
     # Get all active jobs with coordinates
     jobs = JobPosting.objects.filter(
-        is_active=True, 
+        is_active=True,
         status='published',
         latitude__isnull=False,
         longitude__isnull=False
     ).select_related('posted_by', 'category').prefetch_related('required_skills')
-    
-    # Get filter parameters
-    radius = request.GET.get('radius', '')
-    user_lat = request.GET.get('user_lat', '')
-    user_lon = request.GET.get('user_lon', '')
+
+    # Get user's preferred commute radius and location from profile (Story 9)
+    user_profile = None
+    default_radius = ''
+    default_lat = ''
+    default_lon = ''
+
+    if hasattr(request.user, 'job_seeker_profile'):
+        user_profile = request.user.job_seeker_profile
+        if user_profile.commute_radius_miles:
+            default_radius = str(user_profile.commute_radius_miles)
+        if user_profile.latitude and user_profile.longitude:
+            default_lat = str(user_profile.latitude)
+            default_lon = str(user_profile.longitude)
+
+    # Get filter parameters (allow override of profile defaults)
+    radius = request.GET.get('radius', default_radius)
+    user_lat = request.GET.get('user_lat', default_lat)
+    user_lon = request.GET.get('user_lon', default_lon)
+
+    # Save updated radius to profile if changed
+    if request.GET.get('save_radius') == 'true' and radius and user_profile:
+        try:
+            user_profile.commute_radius_miles = int(radius)
+            user_profile.save()
+        except (ValueError, TypeError):
+            pass
     location = request.GET.get('location', '')
     search = request.GET.get('search', '')
     category = request.GET.get('category', '')

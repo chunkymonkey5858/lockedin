@@ -623,3 +623,85 @@ def update_application_status_kanban(request, application_id):
 
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)})
+
+
+@login_required
+def applicant_location_map(request):
+    """
+    Display a map showing clusters of applicants by location (Story 18)
+    """
+    if not hasattr(request.user, 'recruiter_profile'):
+        messages.error(request, 'Only recruiters can access this page.')
+        return redirect('home')
+
+    # Get all jobs posted by this recruiter
+    my_jobs = JobPosting.objects.filter(posted_by=request.user)
+
+    # Get filter parameters
+    selected_job_id = request.GET.get('job_id', '')
+    selected_status = request.GET.get('status', '')
+
+    # Build query for applications
+    applications_query = JobApplication.objects.filter(
+        job__posted_by=request.user
+    ).select_related(
+        'applicant__job_seeker_profile',
+        'job'
+    )
+
+    # Apply filters
+    job_filter = None
+    if selected_job_id:
+        applications_query = applications_query.filter(job__id=selected_job_id)
+        job_filter = JobPosting.objects.filter(id=selected_job_id).first()
+
+    if selected_status:
+        applications_query = applications_query.filter(status=selected_status)
+
+    # Get all applications
+    applications = applications_query
+    total_applications = applications.count()
+
+    # Build markers data for applicants with location
+    applicant_markers = []
+    for application in applications:
+        profile = application.applicant.job_seeker_profile
+        if profile and profile.latitude and profile.longitude:
+            # Determine status badge color
+            status_colors = {
+                'pending': 'secondary',
+                'reviewing': 'info',
+                'shortlisted': 'warning',
+                'interviewing': 'primary',
+                'offered': 'success',
+                'rejected': 'danger',
+                'withdrawn': 'dark',
+                'hired': 'success'
+            }
+
+            applicant_markers.append({
+                'name': application.applicant.get_full_name() or application.applicant.username,
+                'email': application.applicant.email,
+                'location': profile.location or 'Not specified',
+                'headline': profile.headline or 'Job Seeker',
+                'latitude': float(profile.latitude),
+                'longitude': float(profile.longitude),
+                'profile_url': f'/profile/{application.applicant.id}/',
+                'job_title': application.job.title,
+                'applied_date': application.applied_at.strftime('%b %d, %Y'),
+                'status_label': dict(JobApplication.APPLICATION_STATUS).get(application.status, 'Unknown'),
+                'status_color': status_colors.get(application.status, 'secondary')
+            })
+
+    import json
+    context = {
+        'my_jobs': my_jobs,
+        'selected_job_id': selected_job_id,
+        'selected_status': selected_status,
+        'job_filter': job_filter,
+        'total_applications': total_applications,
+        'applicant_markers': json.dumps(applicant_markers),
+        'application_statuses': JobApplication.APPLICATION_STATUS,
+    }
+
+    return render(request, 'recruiters/applicant_map.html', context)

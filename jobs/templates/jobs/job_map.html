@@ -127,7 +127,7 @@
                     <span class="stat-number">{{ all_skills|length }}</span> skills
                 </div>
             </div>
-            
+
             <!-- Map Filters -->
             <div class="map-filters">
                 <form method="get" id="mapFilterForm">
@@ -135,7 +135,7 @@
                         <!-- Search -->
                         <div class="filter-group">
                             <label for="search" class="form-label">Search</label>
-                            <input type="text" class="form-control" id="search" name="search" 
+                            <input type="text" class="form-control" id="search" name="search"
                                    value="{{ search }}" placeholder="Job title, company...">
                         </div>
                         
@@ -159,22 +159,13 @@
                             </select>
                         </div>
                         
-                        <!-- User Location -->
+                        <!-- Hidden User Location (coordinates stored but not displayed) -->
+                        <input type="hidden" id="user_lat" name="user_lat" value="{{ user_lat }}">
+                        <input type="hidden" id="user_lon" name="user_lon" value="{{ user_lon }}">
+
                         <div class="filter-group">
-                            <label for="user_lat" class="form-label">Your Latitude</label>
-                            <input type="number" step="any" class="form-control" id="user_lat" name="user_lat" 
-                                   value="{{ user_lat }}" placeholder="e.g., 40.7128">
-                        </div>
-                        
-                        <div class="filter-group">
-                            <label for="user_lon" class="form-label">Your Longitude</label>
-                            <input type="number" step="any" class="form-control" id="user_lon" name="user_lon" 
-                                   value="{{ user_lon }}" placeholder="e.g., -74.0060">
-                        </div>
-                        
-                        <div class="filter-group">
-                            <label class="form-label">&nbsp;</label>
-                            <button type="button" class="btn btn-outline-primary d-block" id="getLocationBtn">
+                            <label class="form-label">Your Location</label>
+                            <button type="button" class="form-control text-start" id="getLocationBtn">
                                 <i class="fas fa-map-marker-alt"></i> Get My Location
                             </button>
                         </div>
@@ -304,25 +295,44 @@ document.addEventListener('DOMContentLoaded', function() {
     const getLocationBtn = document.getElementById('getLocationBtn');
     const latInput = document.getElementById('user_lat');
     const lonInput = document.getElementById('user_lon');
-    
+
     if (getLocationBtn) {
         getLocationBtn.addEventListener('click', function() {
             if (navigator.geolocation) {
                 getLocationBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Getting location...';
                 getLocationBtn.disabled = true;
-                
+
                 navigator.geolocation.getCurrentPosition(
                     function(position) {
                         latInput.value = position.coords.latitude.toFixed(6);
                         lonInput.value = position.coords.longitude.toFixed(6);
-                        getLocationBtn.innerHTML = '<i class="fas fa-map-marker-alt"></i> Get My Location';
+                        getLocationBtn.innerHTML = '<i class="fas fa-check-circle"></i> Location Set';
                         getLocationBtn.disabled = false;
-                        
+
                         // Center map on user location
                         map.setView([position.coords.latitude, position.coords.longitude], 10);
+
+                        // Add a marker for user's location
+                        L.marker([position.coords.latitude, position.coords.longitude], {
+                            icon: L.divIcon({
+                                html: '<i class="fas fa-home" style="font-size: 24px; color: #28a745;"></i>',
+                                className: '',
+                                iconSize: [24, 24],
+                                iconAnchor: [12, 12]
+                            })
+                        })
+                        .bindPopup('<b>Your Location</b>')
+                        .addTo(map);
+
+                        // Auto-submit form if radius is set
+                        if (radiusSelect && radiusSelect.value) {
+                            setTimeout(() => {
+                                document.getElementById('mapFilterForm').submit();
+                            }, 1000);
+                        }
                     },
                     function(error) {
-                        alert('Unable to get your location. Please enter coordinates manually.');
+                        alert('Unable to get your location. Please enable location permissions in your browser.');
                         getLocationBtn.innerHTML = '<i class="fas fa-map-marker-alt"></i> Get My Location';
                         getLocationBtn.disabled = false;
                     }
@@ -337,18 +347,19 @@ document.addEventListener('DOMContentLoaded', function() {
     const radiusSelect = document.getElementById('radius');
     const latInputField = document.getElementById('user_lat');
     const lonInputField = document.getElementById('user_lon');
-    
+
     if (radiusSelect && latInputField && lonInputField) {
         function autoSubmit() {
             if (radiusSelect.value && latInputField.value && lonInputField.value) {
                 document.getElementById('mapFilterForm').submit();
             }
         }
-        
+
         radiusSelect.addEventListener('change', autoSubmit);
         latInputField.addEventListener('change', autoSubmit);
         lonInputField.addEventListener('change', autoSubmit);
     }
+
 });
 </script>
 {% endblock %}

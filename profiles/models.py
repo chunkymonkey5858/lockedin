@@ -36,6 +36,7 @@ class JobSeekerProfile(models.Model):
     location = models.CharField(max_length=100, blank=True)
     latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True, help_text="Latitude coordinate")
     longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True, help_text="Longitude coordinate")
+    commute_radius_miles = models.IntegerField(default=25, help_text="Preferred commute radius in miles")
     phone = models.CharField(max_length=20, blank=True)
     website = models.URLField(blank=True)
     linkedin_url = models.URLField(blank=True)

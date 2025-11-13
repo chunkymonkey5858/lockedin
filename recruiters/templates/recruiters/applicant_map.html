@@ -1,0 +1,283 @@
+{% extends 'base.html' %}
+
+{% block title %}Applicant Map - LockedIn{% endblock %}
+
+{% block extra_css %}
+<style>
+    #applicantMap {
+        height: 600px;
+        width: 100%;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .map-container {
+        position: relative;
+    }
+
+    .map-filters {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px;
+    }
+
+    .filter-row {
+        display: flex;
+        gap: 15px;
+        flex-wrap: wrap;
+        align-items: end;
+    }
+
+    .filter-group {
+        flex: 1;
+        min-width: 200px;
+    }
+
+    .applicant-popup {
+        max-width: 300px;
+    }
+
+    .applicant-popup h6 {
+        color: #007bff;
+        margin-bottom: 5px;
+    }
+
+    .applicant-popup .info {
+        color: #6c757d;
+        font-size: 0.9em;
+        margin-bottom: 5px;
+    }
+
+    .applicant-popup .btn {
+        font-size: 0.8em;
+        padding: 5px 10px;
+    }
+
+    .map-stats {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+
+    .map-stats h5 {
+        margin-bottom: 10px;
+        color: #495057;
+    }
+
+    .stat-item {
+        display: inline-block;
+        margin-right: 20px;
+        font-size: 0.9em;
+    }
+
+    .stat-number {
+        font-weight: bold;
+        color: #007bff;
+    }
+
+    /* Cluster icon styling */
+    .applicant-cluster {
+        background-color: #007bff;
+        color: white;
+        border-radius: 50%;
+        text-align: center;
+        font-weight: bold;
+        border: 3px solid white;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+    }
+
+    .applicant-cluster-small {
+        width: 30px;
+        height: 30px;
+        line-height: 24px;
+        font-size: 12px;
+    }
+
+    .applicant-cluster-medium {
+        width: 40px;
+        height: 40px;
+        line-height: 34px;
+        font-size: 14px;
+    }
+
+    .applicant-cluster-large {
+        width: 50px;
+        height: 50px;
+        line-height: 44px;
+        font-size: 16px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h2 mb-0">
+                    <i class="fas fa-map-marked-alt me-2"></i>Applicant Location Map
+                </h1>
+                <div>
+                    <a href="{% url 'recruiters:dashboard' %}" class="btn btn-outline-primary">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                    </a>
+                </div>
+            </div>
+
+            <!-- Map Statistics -->
+            <div class="map-stats">
+                <h5><i class="fas fa-chart-bar me-2"></i>Applicant Statistics</h5>
+                <div class="stat-item">
+                    <span class="stat-number">{{ applicant_markers|length }}</span> applicants with location data
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number">{{ total_applications }}</span> total applications
+                </div>
+                {% if job_filter %}
+                <div class="stat-item">
+                    Filtered to: <span class="stat-number">{{ job_filter.title }}</span>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Map Filters -->
+            <div class="map-filters">
+                <form method="get" id="mapFilterForm">
+                    <div class="filter-row">
+                        <!-- Job Filter -->
+                        <div class="filter-group">
+                            <label for="job_id" class="form-label">Filter by Job</label>
+                            <select class="form-select" id="job_id" name="job_id">
+                                <option value="">All My Jobs</option>
+                                {% for job in my_jobs %}
+                                    <option value="{{ job.id }}" {% if selected_job_id == job.id|stringformat:"s" %}selected{% endif %}>
+                                        {{ job.title }} ({{ job.application_count }} applicants)
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Status Filter -->
+                        <div class="filter-group">
+                            <label for="status" class="form-label">Application Status</label>
+                            <select class="form-select" id="status" name="status">
+                                <option value="">All Statuses</option>
+                                {% for status_value, status_label in application_statuses %}
+                                    <option value="{{ status_value }}" {% if selected_status == status_value %}selected{% endif %}>
+                                        {{ status_label }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Filter Button -->
+                        <div class="filter-group">
+                            <label class="form-label">&nbsp;</label>
+                            <button type="submit" class="btn btn-primary d-block">
+                                <i class="fas fa-filter"></i> Apply Filters
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Interactive Map -->
+            <div class="map-container">
+                <div id="applicantMap"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Leaflet CSS and JS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<!-- Leaflet MarkerCluster Plugin -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize the map centered on the US
+    const map = L.map('applicantMap').setView([39.8283, -98.5795], 4);
+
+    // Add OpenStreetMap tiles
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    // Applicant markers data from Django
+    const applicantMarkers = {{ applicant_markers|safe }};
+
+    // Create a marker cluster group with custom styling
+    const markers = L.markerClusterGroup({
+        iconCreateFunction: function(cluster) {
+            const childCount = cluster.getChildCount();
+            let size = 'small';
+            if (childCount > 10) {
+                size = 'large';
+            } else if (childCount > 5) {
+                size = 'medium';
+            }
+
+            return L.divIcon({
+                html: '<div class="applicant-cluster applicant-cluster-' + size + '">' + childCount + '</div>',
+                className: '',
+                iconSize: null
+            });
+        },
+        spiderfyOnMaxZoom: true,
+        showCoverageOnHover: false,
+        zoomToBoundsOnClick: true
+    });
+
+    // Create markers for each applicant
+    applicantMarkers.forEach(function(applicant) {
+        // Create custom popup content
+        const popupContent = `
+            <div class="applicant-popup">
+                <h6><a href="${applicant.profile_url}" target="_blank">${applicant.name}</a></h6>
+                <div class="info"><i class="fas fa-map-marker-alt"></i> ${applicant.location}</div>
+                <div class="info"><i class="fas fa-briefcase"></i> ${applicant.headline}</div>
+                <div class="info"><i class="fas fa-envelope"></i> ${applicant.email}</div>
+                ${applicant.job_title ? `<div class="info"><i class="fas fa-building"></i> Applied to: ${applicant.job_title}</div>` : ''}
+                <div class="info"><i class="fas fa-calendar"></i> Applied: ${applicant.applied_date}</div>
+                <div class="mt-2">
+                    <span class="badge bg-${applicant.status_color}">${applicant.status_label}</span>
+                </div>
+                <div class="mt-2">
+                    <a href="${applicant.profile_url}" class="btn btn-primary btn-sm">View Profile</a>
+                    <a href="mailto:${applicant.email}" class="btn btn-success btn-sm">Email</a>
+                </div>
+            </div>
+        `;
+
+        // Create marker with custom icon
+        const marker = L.marker([applicant.latitude, applicant.longitude], {
+            icon: L.divIcon({
+                html: '<i class="fas fa-user-circle" style="font-size: 24px; color: #007bff;"></i>',
+                className: '',
+                iconSize: [24, 24],
+                iconAnchor: [12, 12]
+            })
+        }).bindPopup(popupContent);
+
+        markers.addLayer(marker);
+    });
+
+    // Add the marker cluster group to the map
+    map.addLayer(markers);
+
+    // Fit map to show all markers if there are any
+    if (applicantMarkers.length > 0) {
+        map.fitBounds(markers.getBounds().pad(0.1));
+    }
+});
+</script>
+{% endblock %}

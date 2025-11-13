@@ -94,6 +94,34 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Quick Access Card for Applicant Map (Story 18) -->
+            <div class="col-md-3 mb-4">
+                <div class="card border-success">
+                    <div class="card-body text-center">
+                        <i class="fas fa-map-marked-alt fa-3x text-success mb-3"></i>
+                        <h6 class="card-title">Applicant Location Map</h6>
+                        <p class="card-text small">See where your applicants are located with clustering</p>
+                        <a href="{% url 'recruiters:applicant_map' %}" class="btn btn-success btn-sm">
+                            <i class="fas fa-map me-1"></i>View Map
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Access Card for Application Pipeline -->
+            <div class="col-md-3 mb-4">
+                <div class="card border-info">
+                    <div class="card-body text-center">
+                        <i class="fas fa-columns fa-3x text-info mb-3"></i>
+                        <h6 class="card-title">Application Pipeline</h6>
+                        <p class="card-text small">Manage applications with Kanban board</p>
+                        <a href="{% url 'recruiters:application_pipeline' %}" class="btn btn-info btn-sm">
+                            <i class="fas fa-tasks me-1"></i>View Pipeline
+                        </a>
+                    </div>
+                </div>
+            </div>
     </div>
     
     <div class="row">

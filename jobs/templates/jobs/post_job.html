@@ -303,7 +303,42 @@
                         </div>
                     </div>
                 </div>
-                
+
+                <!-- Map Location Picker Section (Story 17) -->
+                <div class="mb-4">
+                    <label class="form-label">
+                        <i class="fas fa-map-marker-alt me-2"></i>Pin Office Location on Map
+                    </label>
+                    <div class="form-text mb-2">
+                        <i class="fas fa-info-circle"></i>
+                        Click on the map to pin the exact office location, or enter coordinates manually below
+                    </div>
+                    <div id="locationMap" style="height: 400px; width: 100%; border-radius: 12px; border: 2px solid #e5e7eb; margin-bottom: 15px;"></div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.latitude.id_for_label }}" class="form-label">Latitude</label>
+                                {{ form.latitude }}
+                                <div class="form-text">
+                                    <i class="fas fa-globe"></i>
+                                    Automatically set when you click the map
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.longitude.id_for_label }}" class="form-label">Longitude</label>
+                                {{ form.longitude }}
+                                <div class="form-text">
+                                    <i class="fas fa-globe"></i>
+                                    Automatically set when you click the map
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="row">
                     <div class="col-md-4">
                         <div class="mb-3">
@@ -481,9 +516,112 @@
     </div>
 </div>
 
+<!-- Leaflet CSS and JS for Map -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('jobPostForm');
+
+    // Initialize the location picker map (Story 17)
+    const latInput = document.getElementById('{{ form.latitude.id_for_label }}');
+    const lonInput = document.getElementById('{{ form.longitude.id_for_label }}');
+    const locationInput = document.getElementById('{{ form.location.id_for_label }}');
+
+    // Initialize map centered on US or existing coordinates
+    let initialLat = parseFloat(latInput.value) || 39.8283;
+    let initialLon = parseFloat(lonInput.value) || -98.5795;
+    let initialZoom = (latInput.value && lonInput.value) ? 13 : 4;
+
+    const locationMap = L.map('locationMap').setView([initialLat, initialLon], initialZoom);
+
+    // Add OpenStreetMap tiles
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(locationMap);
+
+    // Create a marker for the office location
+    let marker = null;
+    if (latInput.value && lonInput.value) {
+        marker = L.marker([parseFloat(latInput.value), parseFloat(lonInput.value)], {
+            draggable: true
+        }).addTo(locationMap);
+
+        // Update coordinates when marker is dragged
+        marker.on('dragend', function(e) {
+            const pos = e.target.getLatLng();
+            latInput.value = pos.lat.toFixed(6);
+            lonInput.value = pos.lng.toFixed(6);
+        });
+    }
+
+    // Add marker on map click
+    locationMap.on('click', function(e) {
+        const lat = e.latlng.lat;
+        const lon = e.latlng.lng;
+
+        // Update form fields
+        latInput.value = lat.toFixed(6);
+        lonInput.value = lon.toFixed(6);
+
+        // Remove existing marker if any
+        if (marker) {
+            locationMap.removeLayer(marker);
+        }
+
+        // Add new draggable marker
+        marker = L.marker([lat, lon], {
+            draggable: true
+        }).addTo(locationMap);
+
+        // Update coordinates when marker is dragged
+        marker.on('dragend', function(e) {
+            const pos = e.target.getLatLng();
+            latInput.value = pos.lat.toFixed(6);
+            lonInput.value = pos.lng.toFixed(6);
+        });
+
+        marker.bindPopup(`<b>Office Location</b><br>Lat: ${lat.toFixed(4)}<br>Lon: ${lon.toFixed(4)}`).openPopup();
+    });
+
+    // Try to geocode the location text input and center map
+    if (locationInput) {
+        locationInput.addEventListener('blur', function() {
+            const locationText = this.value.trim();
+            if (locationText && !latInput.value) {
+                // Use Nominatim API to geocode
+                fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(locationText)}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data && data.length > 0) {
+                            const lat = parseFloat(data[0].lat);
+                            const lon = parseFloat(data[0].lon);
+                            locationMap.setView([lat, lon], 13);
+
+                            // Add a temporary marker suggestion (not saved until user clicks)
+                            if (marker) {
+                                locationMap.removeLayer(marker);
+                            }
+                            const tempMarker = L.marker([lat, lon], {
+                                opacity: 0.6
+                            }).addTo(locationMap);
+                            tempMarker.bindPopup('<b>Suggested location</b><br>Click on the map to confirm').openPopup();
+
+                            // Remove temp marker after 5 seconds
+                            setTimeout(() => {
+                                if (tempMarker && !latInput.value) {
+                                    locationMap.removeLayer(tempMarker);
+                                }
+                            }, 5000);
+                        }
+                    })
+                    .catch(error => console.log('Geocoding error:', error));
+            }
+        });
+    }
+
+    // Original validation code continues below...
     
     // Prevent form submission on Enter key in input fields (except textareas)
     form.addEventListener('keydown', function(e) {

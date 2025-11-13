@@ -28,4 +28,7 @@ urlpatterns = [
     path('pipeline/', views.application_pipeline, name='application_pipeline'),
     path('pipeline/job/<int:job_id>/', views.application_pipeline, name='application_pipeline_job'),
     path('applications/<int:application_id>/update-status/', views.update_application_status_kanban, name='update_application_status_kanban'),
+
+    # Applicant Location Map (Story 18)
+    path('applicants/map/', views.applicant_location_map, name='applicant_map'),
 ]

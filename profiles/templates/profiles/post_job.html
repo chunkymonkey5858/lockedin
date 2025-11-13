@@ -61,7 +61,44 @@
                                 {% endif %}
                             </div>
                         </div>
-                        
+
+                        <!-- Map Location Picker Section (Story 17) -->
+                        <div class="mb-4">
+                            <label class="form-label">
+                                <i class="fas fa-map-marker-alt me-2"></i>Pin Office Location on Map
+                            </label>
+                            <div class="alert alert-info py-2">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <strong>Two ways to pin location:</strong>
+                                <ol class="mb-0 mt-1 ps-3">
+                                    <li>Enter an address above in "Location" field and click "Find on Map" below</li>
+                                    <li>Or click directly on the map to pin the exact location</li>
+                                </ol>
+                            </div>
+
+                            <!-- Find Address Button -->
+                            <div class="mb-2">
+                                <button type="button" class="btn btn-primary btn-sm" id="geocodeBtn">
+                                    <i class="fas fa-search me-1"></i>Find Location on Map
+                                </button>
+                                <small class="text-muted ms-2" id="geocodeStatus"></small>
+                            </div>
+
+                            <div id="locationMap" style="height: 400px; width: 100%; border-radius: 8px; border: 2px solid #e5e7eb; margin-bottom: 10px;"></div>
+
+                            <!-- Hidden lat/lng fields -->
+                            <div style="display: none;">
+                                {{ form.latitude }}
+                                {{ form.longitude }}
+                            </div>
+
+                            <!-- Status indicator -->
+                            <div id="mapStatus" class="alert alert-success py-2" style="display: none;">
+                                <i class="fas fa-check-circle me-2"></i>
+                                <span id="mapStatusText">Location pinned successfully!</span>
+                            </div>
+                        </div>
+
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="{{ form.category.id_for_label }}" class="form-label">Category *</label>
@@ -243,4 +280,148 @@
 </style>
 {% endblock %}
 
-{% block scripts %}{% endblock %}
+{% block scripts %}
+<!-- Leaflet CSS and JS for Map -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('simplePostJobForm');
+
+    // Initialize the location picker map (Story 17)
+    const latInput = document.getElementById('{{ form.latitude.id_for_label }}');
+    const lonInput = document.getElementById('{{ form.longitude.id_for_label }}');
+    const locationInput = document.getElementById('{{ form.location.id_for_label }}');
+
+    // Initialize map centered on US or existing coordinates
+    let initialLat = parseFloat(latInput.value) || 39.8283;
+    let initialLon = parseFloat(lonInput.value) || -98.5795;
+    let initialZoom = (latInput.value && lonInput.value) ? 13 : 4;
+
+    const locationMap = L.map('locationMap').setView([initialLat, initialLon], initialZoom);
+
+    // Add OpenStreetMap tiles
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(locationMap);
+
+    // Create a marker for the office location
+    let marker = null;
+    if (latInput.value && lonInput.value) {
+        marker = L.marker([parseFloat(latInput.value), parseFloat(lonInput.value)], {
+            draggable: true
+        }).addTo(locationMap);
+
+        // Update coordinates when marker is dragged
+        marker.on('dragend', function(e) {
+            const pos = e.target.getLatLng();
+            latInput.value = pos.lat.toFixed(6);
+            lonInput.value = pos.lng.toFixed(6);
+        });
+    }
+
+    // Helper function to add/update marker
+    function addMarkerAtLocation(lat, lon, message) {
+        // Update form fields
+        latInput.value = lat.toFixed(6);
+        lonInput.value = lon.toFixed(6);
+
+        // Remove existing marker if any
+        if (marker) {
+            locationMap.removeLayer(marker);
+        }
+
+        // Add new draggable marker
+        marker = L.marker([lat, lon], {
+            draggable: true
+        }).addTo(locationMap);
+
+        // Update coordinates when marker is dragged
+        marker.on('dragend', function(e) {
+            const pos = e.target.getLatLng();
+            latInput.value = pos.lat.toFixed(6);
+            lonInput.value = pos.lng.toFixed(6);
+            showMapStatus('Location updated by dragging marker');
+        });
+
+        marker.bindPopup(`<b>Office Location</b><br>${message || 'Click and drag to adjust'}`).openPopup();
+
+        // Show success message
+        showMapStatus(message || 'Location pinned successfully!');
+    }
+
+    // Helper function to show status
+    function showMapStatus(message) {
+        const statusDiv = document.getElementById('mapStatus');
+        const statusText = document.getElementById('mapStatusText');
+        statusText.textContent = message;
+        statusDiv.style.display = 'block';
+
+        // Hide after 3 seconds
+        setTimeout(() => {
+            statusDiv.style.display = 'none';
+        }, 3000);
+    }
+
+    // Add marker on map click
+    locationMap.on('click', function(e) {
+        const lat = e.latlng.lat;
+        const lon = e.latlng.lng;
+        addMarkerAtLocation(lat, lon, 'Location pinned by clicking map');
+    });
+
+    // Geocode button functionality
+    const geocodeBtn = document.getElementById('geocodeBtn');
+    const geocodeStatus = document.getElementById('geocodeStatus');
+
+    if (geocodeBtn && locationInput) {
+        geocodeBtn.addEventListener('click', function() {
+            const locationText = locationInput.value.trim();
+
+            if (!locationText) {
+                geocodeStatus.textContent = 'Please enter a location first';
+                geocodeStatus.className = 'text-danger ms-2';
+                return;
+            }
+
+            // Show loading state
+            geocodeBtn.disabled = true;
+            geocodeBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Searching...';
+            geocodeStatus.textContent = '';
+
+            // Use Nominatim API to geocode
+            fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(locationText)}`)
+                .then(response => response.json())
+                .then(data => {
+                    geocodeBtn.disabled = false;
+                    geocodeBtn.innerHTML = '<i class="fas fa-search me-1"></i>Find Location on Map';
+
+                    if (data && data.length > 0) {
+                        const lat = parseFloat(data[0].lat);
+                        const lon = parseFloat(data[0].lon);
+                        const displayName = data[0].display_name;
+
+                        // Center map and add marker
+                        locationMap.setView([lat, lon], 13);
+                        addMarkerAtLocation(lat, lon, `Found: ${displayName}`);
+
+                        geocodeStatus.textContent = '✓ Location found!';
+                        geocodeStatus.className = 'text-success ms-2';
+                    } else {
+                        geocodeStatus.textContent = 'Location not found. Try clicking on the map instead.';
+                        geocodeStatus.className = 'text-warning ms-2';
+                    }
+                })
+                .catch(error => {
+                    console.log('Geocoding error:', error);
+                    geocodeBtn.disabled = false;
+                    geocodeBtn.innerHTML = '<i class="fas fa-search me-1"></i>Find Location on Map';
+                    geocodeStatus.textContent = 'Error searching. Please try clicking on the map.';
+                    geocodeStatus.className = 'text-danger ms-2';
+                });
+        });
+    }
+});
+</script>
+{% endblock %}

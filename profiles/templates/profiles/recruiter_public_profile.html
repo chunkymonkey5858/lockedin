@@ -84,9 +84,24 @@
                         </div>
                         <div>
                             {% if user.email %}
-                                <a href="mailto:{{ user.email }}" class="btn btn-outline-primary btn-sm">
-                                    <i class="fas fa-envelope me-1"></i>Contact
-                                </a>
+                                <div class="btn-group me-2" role="group">
+                                    <button type="button" class="btn btn-outline-primary btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="fas fa-paper-plane me-1"></i>Contact
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li>
+                                            <a class="dropdown-item" href="{% url 'start_conversation' user.id %}">
+                                                <i class="fas fa-comments me-2 text-primary"></i>Send Platform Message
+                                            </a>
+                                        </li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li>
+                                            <a class="dropdown-item" href="mailto:{{ user.email }}">
+                                                <i class="fas fa-envelope me-2 text-success"></i>Send Email
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </div>
                             {% endif %}
                             <a href="{% url 'jobs:job_list' %}?recruiter={{ user.id }}" class="btn btn-primary btn-sm">
                                 <i class="fas fa-briefcase me-1"></i>View Jobs

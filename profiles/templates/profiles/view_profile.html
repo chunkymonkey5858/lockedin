@@ -53,22 +53,34 @@
                         {% else %}
                             <!-- Contact Actions for Other Users -->
                             <div class="mt-3">
-                                {% if user.user_type == 'recruiter' and profile.user.user_type == 'job_seeker' %}
-                                    <a href="{% url 'start_conversation' profile.user.id %}" class="btn btn-primary btn-lg fw-bold text-white">
-                                        <i class="fas fa-comment me-2"></i>Message Candidate
-                                    </a>
-                                    <a href="mailto:{{ profile.user.email }}" class="btn btn-outline-primary btn-lg ms-2">
-                                        <i class="fas fa-envelope me-2"></i>Send Email
-                                    </a>
-                                {% elif user.user_type == 'job_seeker' and profile.user.user_type == 'recruiter' %}
-                                    <a href="mailto:{{ profile.user.email }}" class="btn btn-primary btn-lg">
-                                        <i class="fas fa-envelope me-2"></i>Contact Recruiter
-                                    </a>
-                                {% else %}
-                                    <a href="mailto:{{ profile.user.email }}" class="btn btn-primary btn-lg">
-                                        <i class="fas fa-envelope me-2"></i>Contact
-                                    </a>
-                                {% endif %}
+                                <div class="btn-group" role="group">
+                                    <button type="button" class="btn btn-primary btn-lg dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="fas fa-paper-plane me-2"></i>
+                                        {% if user.user_type == 'recruiter' and profile.user.user_type == 'job_seeker' %}
+                                            Contact Candidate
+                                        {% elif user.user_type == 'job_seeker' and profile.user.user_type == 'recruiter' %}
+                                            Contact Recruiter
+                                        {% else %}
+                                            Contact
+                                        {% endif %}
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li>
+                                            <a class="dropdown-item" href="{% url 'start_conversation' profile.user.id %}">
+                                                <i class="fas fa-comments me-2 text-primary"></i>Send Platform Message
+                                            </a>
+                                        </li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li>
+                                            <a class="dropdown-item" href="mailto:{{ profile.user.email }}">
+                                                <i class="fas fa-envelope me-2 text-success"></i>Send Email
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </div>
+                                <span class="text-muted ms-2 small d-block mt-2">
+                                    <i class="fas fa-info-circle me-1"></i>Choose how to reach out
+                                </span>
                             </div>
                         {% endif %}
                     </div>

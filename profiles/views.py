@@ -1325,6 +1325,26 @@ def mark_messages_read(request, conversation_id):
     })
 
 @login_required
+@require_http_methods(["POST"])
+def delete_message(request, message_id):
+    """Delete a message"""
+    message = get_object_or_404(Message, id=message_id)
+    
+    # Check if user is the sender of this message
+    if message.sender != request.user:
+        return JsonResponse({'success': False, 'message': 'You can only delete your own messages'})
+    
+    # Delete the message
+    conversation = message.conversation
+    message.delete()
+    
+    # Update conversation timestamp
+    conversation.updated_at = timezone.now()
+    conversation.save(update_fields=['updated_at'])
+    
+    return JsonResponse({'success': True, 'message': 'Message deleted successfully'})
+
+@login_required
 def notifications_list(request):
     """Display user notifications with filtering and pagination"""
     from django.core.paginator import Paginator
@@ -1379,4 +1399,23 @@ def mark_all_notifications_read(request):
 def get_unread_notification_count(request):
     """AJAX endpoint to get unread notification count"""
     count = Notification.objects.filter(recipient=request.user, is_read=False).count()
+    return JsonResponse({'count': count})
+
+@login_required
+def get_unread_messages_count(request):
+    """AJAX endpoint to get unread messages count"""
+    from profiles.models import Message, Conversation
+    
+    # Get all conversations where the user is a participant
+    user_conversations = Conversation.objects.filter(
+        models.Q(job_seeker=request.user) | models.Q(recruiter=request.user),
+        is_active=True
+    )
+    
+    # Count unread messages in those conversations where user is NOT the sender
+    count = Message.objects.filter(
+        conversation__in=user_conversations,
+        is_read=False
+    ).exclude(sender=request.user).count()
+    
     return JsonResponse({'count': count})

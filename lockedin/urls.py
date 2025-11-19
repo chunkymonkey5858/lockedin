@@ -18,8 +18,15 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from django.shortcuts import redirect
+
+def redirect_old_admin_dashboard(request):
+    """Redirect old /admin/dashboard/ URL to new /dashboard/"""
+    return redirect('admin_dashboard')
 
 urlpatterns = [
+    # Redirect old admin dashboard URL before Django admin catches it
+    path('admin/dashboard/', redirect_old_admin_dashboard, name='old_admin_dashboard_redirect'),
     path('admin/', admin.site.urls),
     path('accounts/', include('django.contrib.auth.urls')),
     path('', include('profiles.urls')),

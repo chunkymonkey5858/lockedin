@@ -42,12 +42,13 @@ urlpatterns = [
     path('publish-job/<int:job_id>/', views.publish_job, name='publish_job'),
     path('unpublish-job/<int:job_id>/', views.unpublish_job, name='unpublish_job'),
     
-    # Admin URLs
-    path('admin/dashboard/', views.admin_dashboard, name='admin_dashboard'),
-    path('admin/action-logs/', views.admin_action_logs, name='admin_action_logs'),
-    path('admin/update-user-status/<int:user_id>/', views.admin_update_user_status, name='admin_update_user_status'),
-    path('admin/update-user-role/<int:user_id>/', views.admin_update_user_role, name='admin_update_user_role'),
-    path('admin/delete-user/<int:user_id>/', views.admin_delete_user, name='admin_delete_user'),
+    # Admin URLs (using 'dashboard' prefix to avoid conflict with Django admin)
+    path('dashboard/', views.admin_dashboard, name='admin_dashboard'),
+    path('dashboard/action-logs/', views.admin_action_logs, name='admin_action_logs'),
+    path('dashboard/update-user-status/<int:user_id>/', views.admin_update_user_status, name='admin_update_user_status'),
+    path('dashboard/update-user-role/<int:user_id>/', views.admin_update_user_role, name='admin_update_user_role'),
+    path('dashboard/delete-user/<int:user_id>/', views.admin_delete_user, name='admin_delete_user'),
+    path('dashboard/export/<str:data_type>/', views.export_data_csv, name='admin_export_csv'),
 
     # Messaging URLs
     path('conversations/', views.conversations_list, name='conversations_list'),

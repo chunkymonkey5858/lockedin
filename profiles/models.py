@@ -390,3 +390,35 @@ class Notification(models.Model):
             self.is_read = True
             self.read_at = timezone.now()
             self.save()
+
+class UserActivity(models.Model):
+    """Track user activities for usage analytics"""
+    ACTIVITY_TYPES = [
+        ('login', 'Login'),
+        ('logout', 'Logout'),
+        ('job_view', 'Job View'),
+        ('job_application', 'Job Application'),
+        ('profile_view', 'Profile View'),
+        ('profile_edit', 'Profile Edit'),
+        ('job_post', 'Job Post'),
+        ('search', 'Search'),
+    ]
+    
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='activities')
+    activity_type = models.CharField(max_length=20, choices=ACTIVITY_TYPES)
+    timestamp = models.DateTimeField(auto_now_add=True)
+    ip_address = models.GenericIPAddressField(blank=True, null=True)
+    details = models.TextField(blank=True, help_text="Additional context like job ID, search terms, etc.")
+    
+    class Meta:
+        ordering = ['-timestamp']
+        verbose_name = 'User Activity'
+        verbose_name_plural = 'User Activities'
+        indexes = [
+            models.Index(fields=['user', '-timestamp']),
+            models.Index(fields=['activity_type', '-timestamp']),
+            models.Index(fields=['-timestamp']),
+        ]
+    
+    def __str__(self):
+        return f"{self.user.username} - {self.get_activity_type_display()} at {self.timestamp.strftime('%Y-%m-%d %H:%M')}"

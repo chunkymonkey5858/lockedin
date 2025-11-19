@@ -3,10 +3,12 @@ from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db import transaction, models
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.views.decorators.http import require_http_methods
 from django.utils import timezone
-from .models import CustomUser, JobSeekerProfile, AdminActionLog, PrivacySettings, Conversation, Message, Notification
+import csv
+from datetime import datetime, timedelta
+from .models import CustomUser, JobSeekerProfile, AdminActionLog, PrivacySettings, Conversation, Message, Notification, UserActivity
 from .forms import (
     UserRegistrationForm, JobSeekerRegistrationForm, JobSeekerProfileForm,
     SkillFormSet, EducationFormSet, WorkExperienceFormSet, LinkFormSet,
@@ -43,6 +45,7 @@ def create_professional_profile(request):
                             bio=''
                         )
                         login(request, user)
+                        log_user_activity(user, 'login', request)
                         messages.success(request, 'Recruiter account created successfully! Welcome to LockedIn.')
                         return redirect('recruiters:dashboard')
                     else:
@@ -54,6 +57,7 @@ def create_professional_profile(request):
                             location=''
                         )
                         login(request, user)
+                        log_user_activity(user, 'login', request)
                         messages.success(request, 'Job seeker account created successfully! Welcome to LockedIn.')
                         return redirect('edit_profile')
                         
@@ -138,6 +142,7 @@ def edit_profile(request):
                     education_formset.save()
                     experience_formset.save()
                     link_formset.save()
+                    log_user_activity(request.user, 'profile_edit', request, 'Profile updated')
                     messages.success(request, 'Profile updated successfully!')
                     return redirect('view_profile')
             except Exception as e:
@@ -198,6 +203,9 @@ def view_profile(request, user_id=None):
                         'is_recruiter': True,
                         'active_jobs_count': active_jobs_count,
                     }
+                    # Log profile view activity
+                    if request.user.is_authenticated and not is_own_profile:
+                        log_user_activity(request.user, 'profile_view', request, f'Viewed profile of user ID: {user.id}')
                     return render(request, 'profiles/recruiter_public_profile.html', context)
             except RecruiterProfile.DoesNotExist:
                 messages.error(request, f'Recruiter profile not found for {user.username}. Please contact support.')
@@ -219,6 +227,10 @@ def view_profile(request, user_id=None):
             except JobSeekerProfile.DoesNotExist:
                 messages.error(request, 'Profile not found. Please create your profile first.')
                 return redirect('create_profile')
+    
+    # Log profile view activity (only if viewing someone else's profile)
+    if request.user.is_authenticated and not is_own_profile and user_id:
+        log_user_activity(request.user, 'profile_view', request, f'Viewed profile of user ID: {user_id}')
     
     context = {
         'profile': profile,
@@ -333,6 +345,8 @@ def home(request):
 
 
 def custom_logout(request):
+    if request.user.is_authenticated:
+        log_user_activity(request.user, 'logout', request)
     logout(request)
     messages.success(request, 'You have been successfully logged out.')
     return redirect('home')
@@ -542,6 +556,10 @@ def job_detail(request, job_id):
     if request.user.user_type == 'job_seeker' and hasattr(request.user, 'job_seeker_profile'):
         user_profile = request.user.job_seeker_profile
     
+    # Log job view activity
+    if request.user.is_authenticated:
+        log_user_activity(request.user, 'job_view', request, f'Job ID: {job.id}, Title: {job.title}')
+    
     context = {
         'job': job,
         'has_applied': has_applied,
@@ -584,6 +602,9 @@ def one_click_apply(request, job_id):
             applicant=request.user,
             cover_letter=request.POST.get('cover_letter', '')
         )
+        
+        # Log application activity
+        log_user_activity(request.user, 'job_application', request, f'Job ID: {job.id}, Title: {job.title}')
         
         return JsonResponse({
             'success': True,
@@ -642,6 +663,8 @@ def post_job(request):
                 job.status = 'published'
                 job.is_active = True
             job.save()
+            # Log job post activity
+            log_user_activity(request.user, 'job_post', request, f'Job ID: {job.id}, Title: {job.title}, Status: {job.status}')
             if job.status == 'draft':
                 messages.success(request, 'Draft saved. You can continue editing from My Jobs before publishing.')
                 return redirect('my_job_postings')
@@ -813,6 +836,22 @@ def log_admin_action(admin_user, target_user, action_type, description, previous
         ip_address=request.META.get('REMOTE_ADDR') if request else None,
         user_agent=request.META.get('HTTP_USER_AGENT', '') if request else ''
     )
+
+def log_user_activity(user, activity_type, request=None, details=''):
+    """Helper function to log user activities"""
+    if not user or not user.is_authenticated:
+        return
+    
+    try:
+        UserActivity.objects.create(
+            user=user,
+            activity_type=activity_type,
+            ip_address=request.META.get('REMOTE_ADDR') if request else None,
+            details=details
+        )
+    except Exception:
+        # Silently fail if logging fails to avoid breaking user experience
+        pass
 
 @admin_required
 def admin_dashboard(request):
@@ -1053,6 +1092,266 @@ def admin_action_logs(request):
     }
 
     return render(request, 'profiles/admin_action_logs.html', context)
+
+# CSV Export Views
+@admin_required
+def export_data_csv(request, data_type):
+    """Export various data types to CSV for reporting purposes"""
+    valid_types = ['users', 'job_postings', 'applications', 'usage_metrics', 'admin_actions']
+    
+    if data_type not in valid_types:
+        messages.error(request, 'Invalid export type.')
+        return redirect('admin_dashboard')
+    
+    # Create response with CSV content type
+    timestamp = timezone.now().strftime('%Y%m%d_%H%M%S')
+    filename = f'{data_type}_export_{timestamp}.csv'
+    response = HttpResponse(content_type='text/csv; charset=utf-8')
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    
+    # Add BOM for Excel compatibility
+    response.write('\ufeff')
+    
+    writer = csv.writer(response)
+    
+    if data_type == 'users':
+        _export_users_csv(writer)
+    elif data_type == 'job_postings':
+        _export_job_postings_csv(writer)
+    elif data_type == 'applications':
+        _export_applications_csv(writer)
+    elif data_type == 'usage_metrics':
+        _export_usage_metrics_csv(writer)
+    elif data_type == 'admin_actions':
+        _export_admin_actions_csv(writer)
+    
+    return response
+
+def _export_users_csv(writer):
+    """Export all users to CSV"""
+    # Header row
+    writer.writerow([
+        'Username', 'Email', 'First Name', 'Last Name', 'User Type', 
+        'Status', 'Is Superuser', 'Is Staff', 'Date Joined', 'Last Login',
+        'Has Job Seeker Profile', 'Has Recruiter Profile'
+    ])
+    
+    # Data rows
+    users = CustomUser.objects.all().select_related('job_seeker_profile').order_by('-date_joined')
+    
+    for user in users:
+        # Check for profiles safely
+        try:
+            has_job_seeker = user.job_seeker_profile is not None
+        except JobSeekerProfile.DoesNotExist:
+            has_job_seeker = False
+        
+        try:
+            from recruiters.models import RecruiterProfile
+            has_recruiter = RecruiterProfile.objects.filter(user=user).exists()
+        except:
+            has_recruiter = False
+        
+        writer.writerow([
+            user.username,
+            user.email,
+            user.first_name or '',
+            user.last_name or '',
+            user.get_user_type_display(),
+            user.get_status_display(),
+            'Yes' if user.is_superuser else 'No',
+            'Yes' if user.is_staff else 'No',
+            user.date_joined.strftime('%Y-%m-%d %H:%M:%S') if user.date_joined else '',
+            user.last_login.strftime('%Y-%m-%d %H:%M:%S') if user.last_login else 'Never',
+            'Yes' if has_job_seeker else 'No',
+            'Yes' if has_recruiter else 'No',
+        ])
+
+def _export_job_postings_csv(writer):
+    """Export all job postings to CSV"""
+    # Header row
+    writer.writerow([
+        'ID', 'Title', 'Company', 'Location', 'Category', 'Employment Type',
+        'Experience Level', 'Work Location', 'Status', 'Is Active',
+        'Salary Min', 'Salary Max', 'Salary Currency', 'Salary Period',
+        'Visa Sponsorship', 'Application Count', 'View Count',
+        'Posted By (Email)', 'Posted By (Username)', 'Posted At', 'Updated At'
+    ])
+    
+    # Data rows
+    jobs = JobPosting.objects.select_related('posted_by', 'category').prefetch_related('required_skills').order_by('-posted_at')
+    
+    for job in jobs:
+        writer.writerow([
+            job.id,
+            job.title or '',
+            job.company or '',
+            job.location or '',
+            job.category.name if job.category else '',
+            job.get_employment_type_display(),
+            job.get_experience_level_display(),
+            job.get_work_location_display(),
+            job.get_status_display(),
+            'Yes' if job.is_active else 'No',
+            str(job.salary_min) if job.salary_min else '',
+            str(job.salary_max) if job.salary_max else '',
+            job.salary_currency,
+            job.salary_period,
+            'Yes' if job.visa_sponsorship else 'No',
+            job.application_count,
+            job.view_count,
+            job.posted_by.email if job.posted_by else '',
+            job.posted_by.username if job.posted_by else '',
+            job.posted_at.strftime('%Y-%m-%d %H:%M:%S') if job.posted_at else '',
+            job.updated_at.strftime('%Y-%m-%d %H:%M:%S') if job.updated_at else '',
+        ])
+
+def _export_applications_csv(writer):
+    """Export all job applications to CSV"""
+    # Header row
+    writer.writerow([
+        'ID', 'Job Title', 'Job Company', 'Applicant Email', 'Applicant Username',
+        'Applicant Name', 'Status', 'Outcome', 'Applied At', 'Interview Date',
+        'Has Resume', 'Has Cover Letter'
+    ])
+    
+    # Data rows
+    applications = JobApplication.objects.select_related(
+        'job', 'applicant', 'job__posted_by'
+    ).order_by('-applied_at')
+    
+    for app in applications:
+        applicant_name = app.applicant.get_full_name() or app.applicant.username
+        
+        writer.writerow([
+            app.id,
+            app.job.title if app.job else '',
+            app.job.company if app.job else '',
+            app.applicant.email if app.applicant else '',
+            app.applicant.username if app.applicant else '',
+            applicant_name,
+            app.get_status_display(),
+            app.get_outcome_display(),
+            app.applied_at.strftime('%Y-%m-%d %H:%M:%S') if app.applied_at else '',
+            app.interview_date.strftime('%Y-%m-%d %H:%M:%S') if app.interview_date else '',
+            'Yes' if app.resume else 'No',
+            'Yes' if app.cover_letter else 'No',
+        ])
+
+def _export_usage_metrics_csv(writer):
+    """Export usage metrics to CSV"""
+    # Header row
+    writer.writerow([
+        'Metric', 'Value', 'Period', 'Date'
+    ])
+    
+    now = timezone.now()
+    
+    # User metrics
+    total_users = CustomUser.objects.count()
+    active_users = CustomUser.objects.filter(status='active').count()
+    job_seekers = CustomUser.objects.filter(user_type='job_seeker').count()
+    recruiters = CustomUser.objects.filter(user_type='recruiter').count()
+    
+    # Job metrics
+    total_jobs = JobPosting.objects.count()
+    active_jobs = JobPosting.objects.filter(is_active=True).count()
+    published_jobs = JobPosting.objects.filter(status='published').count()
+    
+    # Application metrics
+    total_applications = JobApplication.objects.count()
+    # Get first day of current month
+    first_day_of_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    applications_this_month = JobApplication.objects.filter(
+        applied_at__gte=first_day_of_month
+    ).count()
+    
+    # Recent registrations
+    users_today = CustomUser.objects.filter(date_joined__date=now.date()).count()
+    users_this_week = CustomUser.objects.filter(
+        date_joined__gte=now - timedelta(days=7)
+    ).count()
+    users_this_month = CustomUser.objects.filter(
+        date_joined__gte=first_day_of_month
+    ).count()
+    
+    # Write metrics
+    metrics = [
+        ('Total Users', total_users, 'All Time', now.strftime('%Y-%m-%d')),
+        ('Active Users', active_users, 'All Time', now.strftime('%Y-%m-%d')),
+        ('Job Seekers', job_seekers, 'All Time', now.strftime('%Y-%m-%d')),
+        ('Recruiters', recruiters, 'All Time', now.strftime('%Y-%m-%d')),
+        ('Total Job Postings', total_jobs, 'All Time', now.strftime('%Y-%m-%d')),
+        ('Active Job Postings', active_jobs, 'All Time', now.strftime('%Y-%m-%d')),
+        ('Published Job Postings', published_jobs, 'All Time', now.strftime('%Y-%m-%d')),
+        ('Total Applications', total_applications, 'All Time', now.strftime('%Y-%m-%d')),
+        ('Applications This Month', applications_this_month, 'This Month', now.strftime('%Y-%m-%d')),
+        ('New Users Today', users_today, 'Today', now.strftime('%Y-%m-%d')),
+        ('New Users This Week', users_this_week, 'This Week', now.strftime('%Y-%m-%d')),
+        ('New Users This Month', users_this_month, 'This Month', now.strftime('%Y-%m-%d')),
+    ]
+    
+    for metric, value, period, date in metrics:
+        writer.writerow([metric, value, period, date])
+    
+    # Time series data - registrations by day (last 30 days)
+    writer.writerow([])  # Empty row separator
+    writer.writerow(['Date', 'New Registrations', 'New Job Postings', 'New Applications'])
+    
+    for i in range(30):
+        date = now.date() - timedelta(days=i)
+        date_start = timezone.make_aware(datetime.combine(date, datetime.min.time()))
+        date_end = date_start + timedelta(days=1)
+        
+        registrations = CustomUser.objects.filter(
+            date_joined__gte=date_start,
+            date_joined__lt=date_end
+        ).count()
+        
+        job_postings = JobPosting.objects.filter(
+            posted_at__gte=date_start,
+            posted_at__lt=date_end
+        ).count()
+        
+        applications = JobApplication.objects.filter(
+            applied_at__gte=date_start,
+            applied_at__lt=date_end
+        ).count()
+        
+        writer.writerow([
+            date.strftime('%Y-%m-%d'),
+            registrations,
+            job_postings,
+            applications
+        ])
+
+def _export_admin_actions_csv(writer):
+    """Export admin action logs to CSV"""
+    # Header row
+    writer.writerow([
+        'ID', 'Admin User', 'Admin Email', 'Target User', 'Target Email',
+        'Action Type', 'Description', 'Previous Value', 'New Value',
+        'IP Address', 'User Agent', 'Created At'
+    ])
+    
+    # Data rows
+    logs = AdminActionLog.objects.select_related('admin_user', 'target_user').order_by('-created_at')
+    
+    for log in logs:
+        writer.writerow([
+            log.id,
+            log.admin_user.username if log.admin_user else '',
+            log.admin_user.email if log.admin_user else '',
+            log.target_user.username if log.target_user else '',
+            log.target_user.email if log.target_user else '',
+            log.get_action_type_display(),
+            log.description,
+            log.previous_value,
+            log.new_value,
+            str(log.ip_address) if log.ip_address else '',
+            log.user_agent[:200] if log.user_agent else '',  # Truncate long user agents
+            log.created_at.strftime('%Y-%m-%d %H:%M:%S') if log.created_at else '',
+        ])
 
 # Privacy Settings Views
 @login_required

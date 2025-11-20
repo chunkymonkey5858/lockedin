@@ -630,6 +630,10 @@ def applicant_location_map(request):
     """
     Display a map showing clusters of applicants by location (Story 18)
     """
+    from geopy.geocoders import Nominatim
+    from geopy.exc import GeocoderTimedOut, GeocoderServiceError
+    import time
+
     if not hasattr(request.user, 'recruiter_profile'):
         messages.error(request, 'Only recruiters can access this page.')
         return redirect('home')
@@ -662,36 +666,60 @@ def applicant_location_map(request):
     applications = applications_query
     total_applications = applications.count()
 
+    # Initialize geocoder
+    geolocator = Nominatim(user_agent="lockedin_recruiter_app")
+
     # Build markers data for applicants with location
     applicant_markers = []
     for application in applications:
         profile = application.applicant.job_seeker_profile
-        if profile and profile.latitude and profile.longitude:
-            # Determine status badge color
-            status_colors = {
-                'pending': 'secondary',
-                'reviewing': 'info',
-                'shortlisted': 'warning',
-                'interviewing': 'primary',
-                'offered': 'success',
-                'rejected': 'danger',
-                'withdrawn': 'dark',
-                'hired': 'success'
-            }
+        if profile:
+            latitude = profile.latitude
+            longitude = profile.longitude
 
-            applicant_markers.append({
-                'name': application.applicant.get_full_name() or application.applicant.username,
-                'email': application.applicant.email,
-                'location': profile.location or 'Not specified',
-                'headline': profile.headline or 'Job Seeker',
-                'latitude': float(profile.latitude),
-                'longitude': float(profile.longitude),
-                'profile_url': f'/profile/{application.applicant.id}/',
-                'job_title': application.job.title,
-                'applied_date': application.applied_at.strftime('%b %d, %Y'),
-                'status_label': dict(JobApplication.APPLICATION_STATUS).get(application.status, 'Unknown'),
-                'status_color': status_colors.get(application.status, 'secondary')
-            })
+            # If lat/lon are missing but location text exists, geocode it
+            if (not latitude or not longitude) and profile.location:
+                try:
+                    location = geolocator.geocode(profile.location)
+                    if location:
+                        latitude = location.latitude
+                        longitude = location.longitude
+                        # Optionally save to profile for future use
+                        profile.latitude = latitude
+                        profile.longitude = longitude
+                        profile.save(update_fields=['latitude', 'longitude'])
+                    time.sleep(1)  # Be respectful to the geocoding service
+                except (GeocoderTimedOut, GeocoderServiceError):
+                    # Skip this applicant if geocoding fails
+                    continue
+
+            # Only add to markers if we have valid coordinates
+            if latitude and longitude:
+                # Determine status badge color
+                status_colors = {
+                    'pending': 'secondary',
+                    'reviewing': 'info',
+                    'shortlisted': 'warning',
+                    'interviewing': 'primary',
+                    'offered': 'success',
+                    'rejected': 'danger',
+                    'withdrawn': 'dark',
+                    'hired': 'success'
+                }
+
+                applicant_markers.append({
+                    'name': application.applicant.get_full_name() or application.applicant.username,
+                    'email': application.applicant.email,
+                    'location': profile.location or 'Not specified',
+                    'headline': profile.headline or 'Job Seeker',
+                    'latitude': float(latitude),
+                    'longitude': float(longitude),
+                    'profile_url': f'/profile/{application.applicant.id}/',
+                    'job_title': application.job.title,
+                    'applied_date': application.applied_at.strftime('%b %d, %Y'),
+                    'status_label': dict(JobApplication.APPLICATION_STATUS).get(application.status, 'Unknown'),
+                    'status_color': status_colors.get(application.status, 'secondary')
+                })
 
     import json
     context = {
